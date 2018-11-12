@@ -88,6 +88,14 @@ def process_url(url):
     assert 200 <= resp.status_code <= 299
     return fn(resp)
 
+def run_parser(event, context):
+    url = event["url"]
+    data, links = process_url(url)
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"data": data, "links": links})
+    }
+
 def get_args():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("url")

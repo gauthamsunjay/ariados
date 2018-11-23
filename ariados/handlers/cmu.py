@@ -1,8 +1,8 @@
-from ariados.decorators import pattern
+from ariados.decorators import handler
 
 SOURCE = 'cmu'
 DOMAINS = [ 'cmu.edu' ]
 
-@pattern(r'/foo')
+@handler(r'/foo')
 def myfoo_fn():
     pass

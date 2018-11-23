@@ -1,11 +1,15 @@
 import re
 
-def pattern(regex):
-    def deco(fn):
-        compiled = re.compile(regex)
-        if not hasattr(fn, 'patterns'):
-            fn.patterns = []
+from ariados.common import Handler
 
-        fn.patterns.append(compiled)
+def handler(regex):
+    # TODO maybe use classes here to maintain state.
+    def deco(fn):
+        # TODO accept re flags
+        compiled = re.compile(regex)
+        if not hasattr(fn, 'handler'):
+            fn.handler = Handler(fn)
+
+        fn.handler.patterns.append(compiled)
         return fn
     return deco

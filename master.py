@@ -50,16 +50,20 @@ class Worker(Thread):
                 payload=json.dumps({"url": url})
             )
             data = json.loads(resp["Payload"].read().decode("utf-8"))
+            """
+             Expected format for data:
+             {
+                "title": "", "body": {}, "links": [], ...   
+             }
+            """
             try:
-                body = json.loads(data["body"])
-                if body["data"]:
-                    self.store.store(url, body["data"])
-                    print body["data"]
+                if data["body"]:
+                    self.store.store(data["title"], data["body"])
                 self.completed_queue.put(url)
             except KeyError:
-                print "Url = %s, data = %s" % (url, data)
+                print "url = %s, data = %s" % (url, data)
 
-            for link in body["links"]:
+            for link in data["links"]:
                 self.new_links_queue.put(link)
 
 

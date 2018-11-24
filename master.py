@@ -63,7 +63,7 @@ class Worker(Thread):
             except KeyError:
                 print "url = %s, data = %s" % (url, data)
 
-            for link in data["links"]:
+            for link in data.get("links", []):
                 self.new_links_queue.put(link)
 
 

@@ -10,7 +10,11 @@ DOMAINS = [ 'www.wisc.edu', 'www.cs.wisc.edu' ]
 
 # TODO figure out how to reuse the regex in @handler. Maybe use the named groups from re.match?
 def canonicalize_url(url):
-    return url.rstrip("/")
+    url = urlparse.urlparse(url)
+    pr = urlparse.ParseResult(
+        scheme=url.scheme, netloc=url.netloc, path=url.path.rstrip('/'),
+        params='', query='', fragment='')
+    return urlparse.urlunparse(pr)
 
 # TODO make handler take some allowed status codes. By default only 200-299
 @handler(r'^/events/\d+$')

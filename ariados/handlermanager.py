@@ -90,6 +90,7 @@ class HandlerManager(object):
                 if canon_fn is not None:
                     self.domain_to_canonicalizer[domain] = canon_fn
 
+    # TODO too many urlparse operations. Maybe do that once?
     def get_handler_for_url(self, url):
         parsed_url = urlparse.urlparse(url)
         # TODO allowed scheme?

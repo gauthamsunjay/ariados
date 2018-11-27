@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime
 from threading import Thread
-from Queue import Queue
+from Queue import Queue, Empty
 
 from aws import Function
 from db import Status
@@ -28,6 +28,9 @@ COMPLETED_QUEUE_LOAD_FACTOR = 0.7
 COMPLETED_QUEUE_MAX_WAIT_SECONDS = 10
 
 
+should_die = False
+
+
 class Worker(Thread):
     def __init__(self, crawl_queue, fn, fn_name, new_links_queue,
                  completed_queue, store):
@@ -41,7 +44,13 @@ class Worker(Thread):
 
     def run(self):
         while True:
-            url = self.crawl_queue.get()
+            try:
+                url = self.crawl_queue.get(timeout=5)
+            except Empty:
+                if should_die:
+                    break
+                continue
+
             print "Processing url: %s" % url
 
             resp = self.fn.invoke(
@@ -77,6 +86,9 @@ def add_links_to_db(db, new_links_queue):
     prev_time, cur_time = datetime.utcnow(), None
 
     while True:
+        if should_die:
+            break
+
         cur_time = datetime.utcnow()
         load = (new_links_queue.qsize() / float(new_links_queue.maxsize)) * 100.0
         delta = (cur_time - prev_time).total_seconds()
@@ -93,6 +105,9 @@ def add_links_from_db_to_cq(db, crawl_queue):
     prev_time, cur_time = datetime.utcnow(), None
 
     while True:
+        if should_die:
+            break
+
         cur_time = datetime.utcnow()
         load = (crawl_queue.qsize() / float(crawl_queue.maxsize)) * 100.0
         num_links = crawl_queue.maxsize - crawl_queue.qsize()
@@ -115,6 +130,9 @@ def mark_crawling_complete(db, completed_queue):
     prev_time, cur_time = datetime.utcnow(), None
 
     while True:
+        if should_die:
+            break
+
         cur_time = datetime.utcnow()
         delta = (cur_time - prev_time).total_seconds()
         load = (completed_queue.qsize() / float(completed_queue.maxsize)) / 100.0
@@ -125,6 +143,18 @@ def mark_crawling_complete(db, completed_queue):
             db.update_links(links, status=Status.COMPLETED)
         else:
             time.sleep(2)
+
+
+def stop_threads_when_done(db):
+    global should_die
+
+    while True:
+        waiting_link = db.get_link(status=Status.WAITING)
+        processing_link = db.get_link(status=Status.PROCESSING)
+        if waiting_link is None and processing_link is None:
+            should_die = True
+            break
+        time.sleep(5)
 
 
 def main(args):

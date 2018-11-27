@@ -63,7 +63,10 @@ class Cockroach(Database):
 
     def get_link(self, status=Status.WAITING):
         query = self.session.query(Link)
-        return query.filter_by(status=status).first().to_dict()
+        link = query.filter_by(status=status).first()
+        if link is not None:
+            link = link.to_dict()
+        return link
 
     def get_links(self, status=Status.WAITING, num_links=-1):
         query = self.session.query(Link).filter_by(status=status)

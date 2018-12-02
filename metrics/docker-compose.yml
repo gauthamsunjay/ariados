@@ -1,0 +1,30 @@
+version: "3"
+services:
+    influxdb:
+        image: influxdb:latest
+        container_name: influxdb
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+        ports:
+          - "8083:8083"
+          - "8086:8086"
+        volumes:
+          - ./influxdb:/var/lib/influxdb
+        env_file:
+          - ./influxdb.env
+    
+    grafana:
+        image: grafana/grafana:latest
+        container_name: grafana
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+        ports:
+          - "3000:3000"
+        volumes:
+          - ./grafana:/var/lib/grafana
+
+

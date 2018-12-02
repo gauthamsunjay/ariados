@@ -4,7 +4,7 @@ import abc
 class Status(object):
     WAITING = "waiting"
     PROCESSING = "processing"
-    COMPLETED = "competed"
+    COMPLETED = "completed"
 
 
 class Database(object):

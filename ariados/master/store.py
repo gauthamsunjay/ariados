@@ -21,7 +21,7 @@ class JsonStore(Store):
         atexit.register(self.fh.close)
 
     def store(self, data):
-        json.dump(data, self.fh, indent=2)
+        self.fh.write("%s\n" % json.dumps(data))
 
 
 class S3Store(Store):

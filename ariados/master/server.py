@@ -26,7 +26,7 @@ def run_server(host, port, master):
 
         elif flask.request.method == "GET":
             data = flask.request.args or {}
-            data = {k:v[0] for k,v in data.iteritems()}
+            data = {k:v for k,v in data.iteritems()}
         else:
             return flask.jsonify({'status': -1, 'msg': 'Only POST or GET allowed'})
 

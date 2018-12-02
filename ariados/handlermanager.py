@@ -61,9 +61,9 @@ class HandlerManager(object):
         # TODO find a way to deal with handlers not in handler dir
         # this assumes handler dir is a folder in the current dir. No slashes
         self.sources = []
+        self.source_to_startup_links = {}
         self.domain_to_handlers = {}
         self.domain_to_canonicalizer = {}
-        self.domain_to_startup_links = {}
 
         # TODO allow download from s3 here (or maybe the caller should do it)
         self._import_handlers()
@@ -84,7 +84,7 @@ class HandlerManager(object):
 
         for source in self.sources:
             allowed_domains = source.module.DOMAINS
-            startup_links = source.module.STARTUP_LINKS
+            self.source_to_startup_links[source.name] = source.module.STARTUP_LINKS
 
             # TODO preserve some ordering (like line number in file)
             # so that those are tried first. That way, more frequent urls get
@@ -94,7 +94,6 @@ class HandlerManager(object):
                 canon_fn = getattr(source.module, "canonicalize_url", None)
                 if canon_fn is not None:
                     self.domain_to_canonicalizer[domain] = canon_fn
-                self.domain_to_startup_links[domain] = startup_links
 
     # TODO too many urlparse operations. Maybe do that once?
     def get_handler_for_url(self, url):

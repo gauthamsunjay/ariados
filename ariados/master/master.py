@@ -90,7 +90,6 @@ class Master(object):
 
         if not (hard_deadline_reached or buffer_almost_full):
             self.add_links_to_db_last_run = now
-            print "not adding links to db yet"
             return
 
         urls = [self.new_links_queue.get() for _ in range(self.new_links_queue.qsize())]
@@ -113,7 +112,6 @@ class Master(object):
 
         if not (hard_deadline_reached or can_insert_more):
             self.add_links_from_db_to_cq_last_run = now
-            print "not adding links from db to cq yet"
             return
 
         num_links = self.crawl_queue.maxsize - self.crawl_queue.qsize()
@@ -145,6 +143,7 @@ class Master(object):
         now = datetime.datetime.now()
         self.mark_crawling_complete_last_run = now
         self.mark_crawling_complete_last_successful_run = now
+        print "marked %d links complete" % len(links)
 
     def crawl_url(self, url):
         """
@@ -155,7 +154,15 @@ class Master(object):
         return data
 
     def enqueue_url(self, url):
-        self.crawl_queue.put_nowait(url)
+        self.new_links_queue.put_nowait(url)
+
+    def start_source(self, source):
+        urls = self.hm.source_to_startup_links.get(source)
+        assert urls is not None, "%r is not a valid source" % source
+        for url in urls:
+            self.new_links_queue.put(url)
+
+        return "enqueued %d startup urls" % len(urls)
 
     def get_http_endpoints(self):
         """
@@ -164,6 +171,7 @@ class Master(object):
         endpoints = {
             'crawl_url': self.crawl_url,
             'enqueue_url': self.enqueue_url,
+            'start_source': self.start_source,
         }
 
         return endpoints

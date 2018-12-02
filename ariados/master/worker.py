@@ -1,7 +1,8 @@
 import json
 import traceback
 from threading import Thread
-from Queue import Queue, Empty
+from Queue import Empty
+
 
 class Worker(Thread):
     def __init__(self, invoker, crawl_queue, new_links_queue, completed_queue, store):
@@ -39,7 +40,8 @@ class Worker(Thread):
             data, links = payload
             try:
                 if data is not None and isinstance(data, dict):
-                    self.store.store(data["title"], data["body"])
+                    data["url"] = url
+                    self.store.store(data)
 
                 if isinstance(links, list):
                     for link in links:

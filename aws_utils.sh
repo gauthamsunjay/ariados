@@ -25,22 +25,22 @@ create_zip() {
     mv tempdir/ariados.zip .
     rm -rf tempdir
 
-    aws --profile ariados s3 cp --acl public-read ariados.zip s3://${bucket}/ariados.zip
+    aws --profile ariados s3 cp ariados.zip s3://${bucket}/ariados.zip
 }
 
 register_fn() {
     if [[ $# -ne 4 ]]; then
-        echo "require <fn_name> <zip_file> <handler> <role>"
+        echo "require <fn_name> <bucket> <handler> <role>"
         return 1
     fi
 
     local fn_name=$1
-    local zip_file=$2
+    local bucket=$2
     local handler=$3
     local role=$4
 
-    aws --profile ariados lambda create-function --region us-west-1            \
-        --function-name ${fn_name} --code S3Bucket=ariados,S3Key=${zip_file}   \
+    aws --profile ariados lambda create-function --function-name ${fn_name} \
+        --code S3Bucket=${bucket},S3Key=ariados.zip                         \
         --handler ${handler} --role ${role} --runtime python2.7
 }
 

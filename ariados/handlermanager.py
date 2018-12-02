@@ -26,6 +26,7 @@ import urlparse
 
 from ariados.common import Handler
 
+
 class Source(object):
     def __init__(self, source, module_name, module):
         self.name = source
@@ -54,6 +55,7 @@ class Source(object):
         for h in self.handlers:
             h.name = '%s.%s' % (self.module_name, h.fn.__name__)
 
+
 class HandlerManager(object):
     def __init__(self):
         # TODO find a way to deal with handlers not in handler dir
@@ -61,6 +63,7 @@ class HandlerManager(object):
         self.sources = []
         self.domain_to_handlers = {}
         self.domain_to_canonicalizer = {}
+        self.domain_to_startup_links = {}
 
         # TODO allow download from s3 here (or maybe the caller should do it)
         self._import_handlers()
@@ -81,6 +84,8 @@ class HandlerManager(object):
 
         for source in self.sources:
             allowed_domains = source.module.DOMAINS
+            startup_links = source.module.STARTUP_LINKS
+
             # TODO preserve some ordering (like line number in file)
             # so that those are tried first. That way, more frequent urls get
             # regex matched earlier than the rest.
@@ -89,6 +94,7 @@ class HandlerManager(object):
                 canon_fn = getattr(source.module, "canonicalize_url", None)
                 if canon_fn is not None:
                     self.domain_to_canonicalizer[domain] = canon_fn
+                self.domain_to_startup_links[domain] = startup_links
 
     # TODO too many urlparse operations. Maybe do that once?
     def get_handler_for_url(self, url):

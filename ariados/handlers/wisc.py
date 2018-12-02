@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from ariados.decorators import handler
 
 SOURCE = 'wisc'
-DOMAINS = [ 'www.wisc.edu', 'www.cs.wisc.edu' ]
+DOMAINS = ['www.wisc.edu', 'www.cs.wisc.edu']
+STARTUP_LINKS = []
 
 # TODO figure out how to reuse the regex in @handler. Maybe use the named groups from re.match?
 def canonicalize_url(url):

@@ -27,7 +27,7 @@ class Worker(Thread):
             resp = self.invoker.handle_single_url(url)
             # TODO make the invoker return a good response
             payload = json.loads(resp["Payload"].read().decode("utf-8"))
-            if not isinstance(payload, list) and len(payload) != 2:
+            if not isinstance(payload, list) or len(payload) != 2:
                 print "Cannot handle payload %r" % payload
                 continue
 

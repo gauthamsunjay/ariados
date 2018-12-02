@@ -25,6 +25,12 @@ if __name__ == '__main__':
         "https://www.cs.wisc.edu/events/4005",
         "https://www.cs.wisc.edu/events/4006",
         # "https://www.cs.wisc.edu/events/3946", # <--- fails
+        "https://www.cs.cmu.edu/calendar",
+        "https://www.cs.cmu.edu/calendar?page=1",
+        "https://www.cs.cmu.edu/calendar?page=2",
+        "https://www.cs.cmu.edu/calendar/tue-2018-12-04-1100/xsede-monthly-workshop-big-data-analytics-machine-learning",
+        "https://www.cs.cmu.edu/calendar/fri-2018-12-07-1430/computer-science-thesis-proposal",
+        "https://www.cs.cmu.edu/calendar/fri-2018-12-07-0900/institute-complex-engineered-systems-fireside-chat"
     ]
 
     if len(sys.argv) > 1:

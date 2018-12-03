@@ -1,2 +1,8 @@
-lxml==4.2.5
+awscli==1.16.67
+beautifulsoup4==4.6.3
+boto3==1.9.57
+cockroachdb==0.2.1
+Flask==1.0.2
 requests==2.20.1
+SQLAlchemy==1.2.14
+lxml==4.2.5

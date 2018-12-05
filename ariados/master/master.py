@@ -93,7 +93,9 @@ class Master(object):
             return
 
         urls = [self.new_links_queue.get() for _ in range(self.new_links_queue.qsize())]
-        db.insert_links(urls)
+        # TODO do we care about the exact order? Or is some unordering within chunks okay?
+        # removing duplicates because db.insert_links doesn't like them.
+        db.insert_links(set(urls))
 
         now = datetime.datetime.now()
         self.add_links_to_db_last_run = now
@@ -150,8 +152,7 @@ class Master(object):
         crawls a given url and returns the result
         """
         resp = self.invoker.handle_single_url(url)
-        data = json.loads(resp["Payload"].read().decode("utf-8"))
-        return data
+        return resp
 
     def enqueue_url(self, url):
         self.new_links_queue.put_nowait(url)

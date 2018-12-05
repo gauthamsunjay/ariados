@@ -27,9 +27,26 @@ class AWSLambdaInvoker(Invoker):
         )
 
     def handle_single_url(self, url):
+        """
+        returns a single dictionary having a success flag, data and links if True,
+        otherwise 'error'
+        """
         payload = json.dumps({"url": url})
-        return self.invoke("handle_single_url", payload)
+        result = self.invoke("handle_single_url", payload)
+        jresult = json.loads(result["Payload"].read().decode("utf-8"))
+        return jresult
 
     def handle_multiple_urls(self, urls):
+        """
+        returns a list of dictionaries, each having a success flag along with
+        idx, url. data and links are included if success is True, otherwise 'error'
+        """
         payload = json.dumps({"urls": urls})
-        return self.invoke("handle_multiple_urls", payload)
+        result = self.invoke("handle_multiple_urls", payload)
+        jresult = json.loads(result["Payload"].read().decode("utf-8"))
+        if not jresult['success']:
+            # if not a success, something wrong with the lambda itself.
+            # TODO log this
+            raise Exception("Got bad response %r" % jresult)
+
+        return jresult['result']

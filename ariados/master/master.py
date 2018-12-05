@@ -4,6 +4,7 @@ from threading import Thread
 from Queue import Queue
 
 from ariados.common import constants
+from ariados.common import stats
 from ariados.handlermanager import HandlerManager
 from ariados.master.store import JsonStore
 from ariados.master.cockroach import Cockroach
@@ -22,6 +23,12 @@ class Master(object):
         self.init_store()
         self.init_workers()
         self.init_service_threads()
+
+        stats.client.gauge("lambdas.active", 0)
+        stats.client.gauge("urls.waiting_on_disk", 0)
+        stats.client.gauge("urls.waiting_in_mem", 0)
+        stats.client.gauge("urls.in_progress.in_lambda", 0)
+        stats.client.gauge("urls.completed", 0)
 
     def init_crawl_queue(self):
         self.crawl_queue = Queue(maxsize=constants.CRAWL_QUEUE_MAX_SIZE)
@@ -92,10 +99,11 @@ class Master(object):
             self.add_links_to_db_last_run = now
             return
 
-        urls = [self.new_links_queue.get() for _ in range(self.new_links_queue.qsize())]
+        urls = set(self.new_links_queue.get() for _ in range(self.new_links_queue.qsize()))
         # TODO do we care about the exact order? Or is some unordering within chunks okay?
         # removing duplicates because db.insert_links doesn't like them.
-        db.insert_links(set(urls))
+        stats.client.gauge("urls.waiting_on_disk", len(urls), delta=True)
+        db.insert_links(urls)
 
         now = datetime.datetime.now()
         self.add_links_to_db_last_run = now
@@ -119,8 +127,12 @@ class Master(object):
         num_links = self.crawl_queue.maxsize - self.crawl_queue.qsize()
         links = [ld["link"] for ld in db.get_links(num_links=num_links)]
         db.update_links(links, Status.PROCESSING)
+
+        stats.client.gauge("urls.waiting.in_mem", len(links), delta=True)
+        stats.client.gauge("urls.waiting.on_disk", -len(links), delta=True)
         for link in links:
             self.crawl_queue.put(link)
+            stats.client.incr("crawlq.put")
 
         now = datetime.datetime.now()
         self.add_links_from_db_to_cq_last_run = now
@@ -140,6 +152,7 @@ class Master(object):
             return
 
         links = [self.completed_queue.get() for _ in range(self.completed_queue.qsize())]
+        stats.client.gauge("urls.completed", len(links), delta=True)
         db.update_links(links, status=Status.COMPLETED)
 
         now = datetime.datetime.now()

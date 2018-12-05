@@ -3,6 +3,8 @@ import json
 import os
 import atexit
 
+from ariados.common import stats
+
 
 class Store(object):
     __metaclass__ = abc.ABCMeta
@@ -21,7 +23,11 @@ class JsonStore(Store):
         atexit.register(self.fh.close)
 
     def store(self, data):
-        self.fh.write("%s\n" % json.dumps(data))
+        serialized_data = "%s\n" % json.dumps(data)
+        stats.client.incr("store.writes", count=len(serialized_data.encode("utf-8")))
+
+        self.fh.write(serialized_data)
+
 
 
 class S3Store(Store):

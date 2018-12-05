@@ -16,7 +16,7 @@ ariados_prepare_admin_env() {
     git clone --depth=1 https://github.com/JFox/aws-lambda-lxml.git
     pip install -r "${sourcedir}/requirements.txt"
     echo "#please paste your configuration details here" > admin.conf
-    echo "aws_profile" >> admin.conf
+    echo "aws_profile=" >> admin.conf
     echo "s3_bucket=" >> admin.conf
     echo "s3_path_to_zipfile=" >> admin.conf
     echo "lambda_role=" >> admin.conf

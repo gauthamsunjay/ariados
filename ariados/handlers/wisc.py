@@ -7,7 +7,9 @@ from ariados.decorators import handler
 
 SOURCE = 'wisc'
 DOMAINS = ['www.wisc.edu', 'www.cs.wisc.edu']
-STARTUP_LINKS = []
+STARTUP_LINKS = [
+    "https://www.cs.wisc.edu/calendar/month/2018-11"
+]
 
 # TODO figure out how to reuse the regex in @handler. Maybe use the named groups from re.match?
 def canonicalize_url(url):

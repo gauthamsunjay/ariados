@@ -6,8 +6,8 @@ from StringIO import StringIO
 
 from ariados.decorators import handler
 
-SOURCE = 'cmu'
-DOMAINS = ['www.cmu.edu', 'www.cs.cmu.edu']
+SOURCE = 'cscmu'
+DOMAINS = ['cs.cmu.edu', 'www.cs.cmu.edu']
 STARTUP_LINKS = ['https://www.cs.cmu.edu/calendar']
 
 
@@ -52,6 +52,7 @@ def parse_events(resp):
     speaker = speaker[0].strip() if speaker else ""
 
     result = OrderedDict()
+    result["url"] = resp.url
     result["title"] = title
     result["event_type"] = event_type
     result["start_time"] = start_time

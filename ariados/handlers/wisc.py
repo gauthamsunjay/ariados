@@ -1,66 +1,69 @@
 import urlparse
-from collections import OrderedDict
 
-from bs4 import BeautifulSoup
+from collections import OrderedDict
+from lxml import etree
+from StringIO import StringIO
 
 from ariados.decorators import handler
 
 SOURCE = 'wisc'
-DOMAINS = ['www.wisc.edu', 'www.cs.wisc.edu']
-STARTUP_LINKS = [
-    "https://www.cs.wisc.edu/calendar/month/2018-11"
+DOMAINS = ['wisc.edu']
+
+subdomains = [
+    'aae', 'advising', 'afroamericanstudies', 'afrotc', 'agroecology', 'agronomy', 'alc', 'amindian', 'anatomy', 'anesthesia', 'ansci',
+    'anthropology', 'art', 'arthistory', 'arts', 'asianamerican', 'astro', 'bact', 'badgerrotc', 'biochem', 'biology', 'biostat', 'bmolchem',
+    'botany', 'bse', 'bus', 'cals', 'canes', 'canvas', 'celticstudies', 'chem', 'chicla', 'ci', 'clfs', 'commarts', 'compliance',
+    'continuingstudies', 'crb', 'creeca', 'csd', 'dance', 'dces', 'dermatology', 'diversity',
+    'dpla', 'eastasia', 'econ', 'education', 'emed', 'english', 'engr', 'entomology', 'envirosci', 'fammed', 'foodsci', 'forestandwildlifeecology',
+    'frit', 'genetics', 'geography', 'geoscience', 'global', 'globalcultures', 'gns', 'grad', 'guide', 'history', 'histsci', 'horticulture', 'humonc',
+    'info', 'integrativebiology', 'international', 'ischool', 'ismajor', 'it', 'jewishstudies', 'jobs', 'journalism', 'kinesiology', 'lacis', 'lafollette',
+    'languages', 'law', 'library', 'ling', 'ls', 'lsc', 'madison', 'math', 'mcardle', 'med', 'medhist', 'medievalstudies', 'medmicro', 'medphysics',
+    'meteor', 'mideast', 'mobile', 'molpharm', 'music', 'nelson', 'neuro', 'neurology', 'neurosurg', 'news', 'nutrisci', 'obe', 'obgyn', 'ophth', 'orthorehab',
+    'parent', 'pathology', 'pediatrics', 'pharmacology', 'pharmacy', 'philosophy', 'physics', 'physiology', 'plantpath', 'polisci', 'polyglot', 'pophealth',
+    'psych', 'psychiatry', 'pubs', 'radiology', 'registrar', 'religiousstudies', 'research', 'rpse', 'seasia', 'secfac', 'socwork', 'sohe', 'soils', 'son',
+    'southasia', 'spanport', 'ssc', 'stat', 'sts', 'students', 'studyabroad', 'surgery', 'theatre', 'urology', 'uwpd', 'vetmed', 'womenstudies', 'working', 'wsb',
 ]
 
-# TODO figure out how to reuse the regex in @handler. Maybe use the named groups from re.match?
+for i in subdomains:
+    DOMAINS.append("%s.wisc.edu" % i)
+
+www_domains = ["www.%s" % i for i in DOMAINS]
+DOMAINS.extend(www_domains)
+
+startup_link_set = set()
+startup_link_set.add("https://www.wisc.edu")
+for i in subdomains:
+    startup_link_set.add("https://www.%s.wisc.edu" % i)
+
+
+STARTUP_LINKS = list(startup_link_set)
+
 def canonicalize_url(url):
     url = urlparse.urlparse(url)
     pr = urlparse.ParseResult(
         scheme=url.scheme, netloc=url.netloc, path=url.path.rstrip('/'),
-        params='', query='', fragment='')
+        params='', query=url.query, fragment='')
     return urlparse.urlunparse(pr)
 
-# TODO make handler take some allowed status codes. By default only 200-299
-@handler(r'^/events/\d+$')
-def parse_events(resp):
+@handler(r'.*')
+def parse_everything(resp):
     data = resp.content
-    soup = BeautifulSoup(data, 'html.parser')
-    title = soup.select_one('h1#page-title').string
-    start_time = soup.select('div.field-name-field-date  div.field-item  span.date-display-start')
-    if len(start_time) > 0:
-        start_time = start_time[0]['content']
-    else:
-        start_time = None
+    parser = etree.HTMLParser()
+    tree = etree.parse(StringIO(data), parser)
 
-    end_time = soup.select('div.field-name-field-date  div.field-item  span.date-display-end')
-    if len(end_time) > 0:
-        end_time = end_time[0]['content']
-    else:
-        end_time = None
+    title = tree.xpath('//head/title/text()')[0]
+    text = ''
+    body_tag = tree.xpath('body')
+    if len(body_tag) > 0:
+        body_tag = body_tag[0]
+        text = ''.join(body_tag.itertext())
 
-    loc = soup.select_one('div.field-name-field-location').string
-    speaker_name = soup.select_one('section.field-name-field-speaker-name div.field-items').string
-    speaker_ins = soup.select_one('section.field-name-field-speaker-institution div.field-items').string
-    body = soup.select_one('section.field-name-body').text
+    data = {
+        'url': resp.url,
+        'title': title,
+        'text': text,
+    }
 
-    result = OrderedDict()
-    result['title'] = title.strip()
-    result['start_time'] = start_time
-    result['end_time'] = end_time
-    result['location'] = loc
-    result['speaker'] = { 'name': speaker_name, 'from': speaker_ins }
-    result['body'] = body
-
-    return result, []
-
-@handler(r'^/calendar/month/\d{4}-\d{2}$')
-def parse_calendar_page(resp):
-    data = resp.content
-    soup = BeautifulSoup(data, 'html.parser')
-
-    # TODO giving every link. It is upto the caller to filter these links using
-    # handlermanager
-
-    links = soup.find_all('a')
-    links = filter(None, map(lambda x: x.get('href'), links))
+    links = tree.xpath('//a/@href')
     links = map(lambda x: urlparse.urljoin(resp.url, x), links)
-    return None, links
+    return data, links

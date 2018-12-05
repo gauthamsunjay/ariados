@@ -5,8 +5,8 @@ from ariados.lambda_handlers import handle_single_url, handle_multiple_urls
 
 def test_handle_single_url(url):
     event = {'url':url}
-    data, links = handle_single_url(event, None)
-    print json.dumps({"data": data, "links": links}, indent=2)
+    output = handle_single_url(event, None)
+    print json.dumps(output, indent=2)
 
 def test_handle_multiple_urls(urls):
     event = {'urls': urls}

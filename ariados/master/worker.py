@@ -24,11 +24,12 @@ class Worker(Thread):
 
             print "Processing url: %s" % url
 
-            resp = self.invoker.handle_single_url(url)
-            # TODO make the invoker return a good response
-            payload = json.loads(resp["Payload"].read().decode("utf-8"))
-            if not isinstance(payload, list) or len(payload) != 2:
-                print "Cannot handle payload %r" % payload
+            # TODO make handle_single_url return a good result always or throw exceptions.
+            # these exceptions can be tried here to write a good response back to crawlqueue.
+            result = self.invoker.handle_single_url(url)
+            if not result['success']:
+                # TODO log this failure
+                print "Failed to crawl url %r, error: %s" % (url, result['error'])
                 continue
 
             """
@@ -37,7 +38,7 @@ class Worker(Thread):
                 "title": "", "body": {}, "links": [], ...
              }
             """
-            data, links = payload
+            data, links = result['data'], result['links']
             try:
                 if data is not None and isinstance(data, dict):
                     data["url"] = url
@@ -51,3 +52,5 @@ class Worker(Thread):
             except:
                 print "Got error for url %s" % url
                 print traceback.format_exc()
+                # TODO notify crawlqueue on failure so it doesn't retry to often.
+                # something like a backoff

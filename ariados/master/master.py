@@ -150,8 +150,7 @@ class Master(object):
         crawls a given url and returns the result
         """
         resp = self.invoker.handle_single_url(url)
-        data = json.loads(resp["Payload"].read().decode("utf-8"))
-        return data
+        return resp
 
     def enqueue_url(self, url):
         self.new_links_queue.put_nowait(url)

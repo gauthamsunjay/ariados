@@ -4,13 +4,13 @@ from threading import Thread
 from Queue import Queue
 
 from ariados.common import constants
-from ariados.utils import run_forever
 from ariados.handlermanager import HandlerManager
 from ariados.master.store import JsonStore
 from ariados.master.cockroach import Cockroach
 from ariados.master.worker import Worker
 from ariados.master.invokers import AWSLambdaInvoker
 from ariados.master.db import Status
+from ariados.utils import run_forever
 
 class Master(object):
     def __init__(self):

@@ -2,8 +2,12 @@
 
 import argparse
 
+from statsd import StatsClient
+
 from .server import run_server
 from .master import Master
+
+from ariados.common import stats
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -14,6 +18,7 @@ def get_args():
     return parser.parse_args()
 
 def main(args):
+    stats.set_default_client(StatsClient(host="localhost", port=8125))
     run_server(args.host, args.port, Master())
 
 if __name__ == '__main__':

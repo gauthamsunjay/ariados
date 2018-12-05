@@ -6,3 +6,4 @@ Flask==1.0.2
 requests==2.20.1
 SQLAlchemy==1.2.14
 lxml==4.2.5
+statsd==3.3.0

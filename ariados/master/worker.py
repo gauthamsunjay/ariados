@@ -3,6 +3,7 @@ import traceback
 from threading import Thread
 from Queue import Empty
 
+from ariados.common import stats
 
 class Worker(Thread):
     def __init__(self, invoker, crawl_queue, new_links_queue, completed_queue, store):
@@ -13,7 +14,7 @@ class Worker(Thread):
         self.new_links_queue = new_links_queue
         self.completed_queue = completed_queue
         self.store = store
-        self.invoker = invoker
+        self.invoker = invoker    
 
     def run(self):
         while True:
@@ -26,6 +27,7 @@ class Worker(Thread):
 
             # TODO make handle_single_url return a good result always or throw exceptions.
             # these exceptions can be tried here to write a good response back to crawlqueue.
+            stats.client.incr("worker.urls.active")
             result = self.invoker.handle_single_url(url)
             if not result['success']:
                 # TODO log this failure

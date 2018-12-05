@@ -1,20 +1,24 @@
 version: "3"
 services:
-    influxdb:
-        image: influxdb:latest
-        container_name: influxdb
+    graphite:
+        image: graphiteapp/graphite-statsd
+        container_name: graphite
         deploy:
-            replicas: 1
+            replicas: 1 
             restart_policy:
                 condition: on-failure
         ports:
-          - "8083:8083"
-          - "8086:8086"
+          - "80:80"  
+          - "2003:2003"
+          - "2004:2004"
+          - "2023:2023"
+          - "2024:2024"  
+          - "8125:8125/udp"
+          - "8126:8126"
         volumes:
-          - ./influxdb:/var/lib/influxdb
-        env_file:
-          - ./influxdb.env
-    
+          - ./graphite/configs:/opt/graphite/conf
+          - ./graphite/data:/opt/graphite/storage
+          - ./graphite/statsd_config:/opt/statsd/config
     grafana:
         image: grafana/grafana:latest
         container_name: grafana

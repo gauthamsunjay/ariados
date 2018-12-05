@@ -10,7 +10,7 @@ DOMAINS = ['cs.wisc.edu', 'www.cs.wisc.edu']
 STARTUP_LINKS = [
     "https://www.cs.wisc.edu/calendar/month/{year}-{month}".format(year=year, month=month)
     for year in (2018, 2017, 2016, 2015)
-    for month in range(1, 13),
+    for month in range(1, 13)
 ]
 
 # TODO figure out how to reuse the regex in @handler. Maybe use the named groups from re.match?
@@ -45,6 +45,7 @@ def parse_events(resp):
     body = soup.select_one('section.field-name-body').text
 
     result = OrderedDict()
+    result['url'] = resp.url
     result['title'] = title.strip()
     result['start_time'] = start_time
     result['end_time'] = end_time

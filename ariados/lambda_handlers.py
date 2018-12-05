@@ -60,13 +60,13 @@ def process(hm, inp):
         raise Exception("No handler for url %r" % inp.resp.url)
 
     data, links = handler(inp.resp)
-    canon_links = []
+    canon_links = set()
     for link in links:
         c_link = hm.canonicalize_url(link)
         if hm.get_handler_for_url(c_link) is not None:
-            canon_links.append(c_link)
+            canon_links.add(c_link)
 
-    return ProcessorOutput(idx=inp.idx, data=data, links=canon_links)
+    return ProcessorOutput(idx=inp.idx, data=data, links=list(canon_links))
 
 def processor(hm, process_q, output_q):
     """

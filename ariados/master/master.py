@@ -93,7 +93,9 @@ class Master(object):
             return
 
         urls = [self.new_links_queue.get() for _ in range(self.new_links_queue.qsize())]
-        db.insert_links(urls)
+        # TODO do we care about the exact order? Or is some unordering within chunks okay?
+        # removing duplicates because db.insert_links doesn't like them.
+        db.insert_links(set(urls))
 
         now = datetime.datetime.now()
         self.add_links_to_db_last_run = now

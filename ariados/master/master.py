@@ -100,11 +100,24 @@ class Master(object):
             self.add_links_to_db_last_run = now
             return
 
-        urls = set(self.new_links_queue.get() for _ in range(self.new_links_queue.qsize()))
-        # TODO do we care about the exact order? Or is some unordering within chunks okay?
-        # removing duplicates because db.insert_links doesn't like them.
-        stats.client.gauge("urls.waiting_on_disk", len(urls), delta=True)
-        db.insert_links(urls)
+        urls = set()
+        try:
+            while True:
+                url = self.new_links_queue.get_nowait()
+                urls.add(url)
+        except Empty:
+            break
+
+        urls = list(urls)
+        start = 0
+        end = constants.MAX_ENTRIES_PER_TRANSACTION
+        chunk = urls[start:end]
+        while len(chunk) > 0:
+            db.insert_links(chunk)
+            stats.client.gauge("urls.waiting_on_disk", len(chunk), delta=True)
+            start = end
+            end += constants.MAX_ENTRIES_PER_TRANSACTION
+            chunk = urls[start:end]
 
         now = datetime.datetime.now()
         self.add_links_to_db_last_run = now
@@ -153,13 +166,24 @@ class Master(object):
             return
 
         links_dict = defaultdict(list)
-        for _ in range(self.completed_queue.qsize()):
-            url, status = self.completed_queue.get()
-            links_dict[status].append(url)
+        try:
+            while True:
+                url, status = self.completed_queue.get_nowait()
+                links_dict[status].append(url)
+        except Empty:
+            pass
 
         for status, links in links_dict.iteritems():
-            stats.client.gauge("urls.%s" % status, len(links), delta=True)
-            db.update_links(links, status=status)
+            start = 0
+            end = constants.MAX_ENTRIES_PER_TRANSACTION
+            chunk = links[start:end]
+            while len(chunk) > 0:
+                stats.client.gauge("urls.%s" % status, len(chunk), delta=True)
+                db.update_links(chunk, status=status)
+                start = end
+                end += constants.MAX_ENTRIES_PER_TRANSACTION
+                chunk = links[start:end]
+
             print "marked %d links %s" % (len(links), status)
 
         now = datetime.datetime.now()

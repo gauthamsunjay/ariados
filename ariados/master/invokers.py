@@ -1,6 +1,12 @@
 import boto3
 import json
 import os
+import time
+import traceback
+
+from botocore.exceptions import ReadTimeoutError
+
+from ariados.common import stats
 
 class Invoker(object):
     def __init__(self):
@@ -31,10 +37,30 @@ class AWSLambdaInvoker(Invoker):
         returns a single dictionary having a success flag, data and links if True,
         otherwise 'error'
         """
+        stats.client.incr("lambdas.invoked")
+        stats.client.incr("lambdas.urls.in_progress")
+        stats.client.gauge("lambdas.active", 1, delta=True)
+        stats.client.gauge("urls.in_progress.in_lambda", 1, delta=True)
+
         payload = json.dumps({"url": url})
-        result = self.invoke("handle_single_url", payload)
-        jresult = json.loads(result["Payload"].read().decode("utf-8"))
-        return jresult
+        start = time.time()
+        stat = "lambdas.invocation.success"
+        try:
+            result = self.invoke("handle_single_url", payload)
+            jresult = json.loads(result["Payload"].read().decode("utf-8"))
+            return jresult
+        except Exception as ex:
+            if isinstance(ex, ReadTimeoutError):
+                stat = "lambdas.invocation.failure.timeout"
+            else:
+                stat = "lambdas.invocation.failure"
+            raise
+        finally:
+            end = time.time()
+            delta = (end - start) * 1000
+            stats.client.timing(stat, delta)
+            stats.client.gauge("lambdas.active", -1, delta=True)
+            stats.client.gauge("urls.in_progress.in_lambda", -1, delta=True)
 
     def handle_multiple_urls(self, urls):
         """

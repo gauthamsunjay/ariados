@@ -5,6 +5,7 @@ class Status(object):
     WAITING = "waiting"
     PROCESSING = "processing"
     COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class Database(object):

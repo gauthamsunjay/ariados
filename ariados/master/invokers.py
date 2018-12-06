@@ -2,7 +2,6 @@ import boto3
 import json
 import os
 import time
-import traceback
 
 from botocore.exceptions import ReadTimeoutError
 
@@ -37,11 +36,7 @@ class AWSLambdaInvoker(Invoker):
         returns a single dictionary having a success flag, data and links if True,
         otherwise 'error'
         """
-        stats.client.incr("lambdas.invoked")
-        stats.client.incr("lambdas.urls.in_progress")
-        stats.client.gauge("lambdas.active", 1, delta=True)
-        stats.client.gauge("urls.in_progress.in_lambda", 1, delta=True)
-
+        stats.client.incr("lambdas.urls.processing")
         payload = json.dumps({"url": url})
         start = time.time()
         stat = "lambdas.invocation.success"
@@ -59,8 +54,6 @@ class AWSLambdaInvoker(Invoker):
             end = time.time()
             delta = (end - start) * 1000
             stats.client.timing(stat, delta)
-            stats.client.gauge("lambdas.active", -1, delta=True)
-            stats.client.gauge("urls.in_progress.in_lambda", -1, delta=True)
 
     def handle_multiple_urls(self, urls):
         """

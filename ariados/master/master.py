@@ -1,5 +1,5 @@
 import datetime
-import json
+from collections import defaultdict
 from threading import Thread
 from Queue import Queue
 
@@ -29,6 +29,7 @@ class Master(object):
         stats.client.gauge("urls.waiting_in_mem", 0)
         stats.client.gauge("urls.in_progress.in_lambda", 0)
         stats.client.gauge("urls.completed", 0)
+        stats.client.gauge("urls.failed", 0)
 
     def init_crawl_queue(self):
         self.crawl_queue = Queue(maxsize=constants.CRAWL_QUEUE_MAX_SIZE)
@@ -151,14 +152,19 @@ class Master(object):
             self.mark_crawling_complete_last_run = now
             return
 
-        links = [self.completed_queue.get() for _ in range(self.completed_queue.qsize())]
-        stats.client.gauge("urls.completed", len(links), delta=True)
-        db.update_links(links, status=Status.COMPLETED)
+        links_dict = defaultdict(list)
+        for _ in range(self.completed_queue.qsize()):
+            url, status = self.completed_queue.get()
+            links_dict[status].append(url)
+
+        for status, links in links_dict.iteritems():
+            stats.client.gauge("urls.%s" % status, len(links), delta=True)
+            db.update_links(links, status=status)
+            print "marked %d links %s" % (len(links), status)
 
         now = datetime.datetime.now()
         self.mark_crawling_complete_last_run = now
         self.mark_crawling_complete_last_successful_run = now
-        print "marked %d links complete" % len(links)
 
     def crawl_url(self, url):
         """

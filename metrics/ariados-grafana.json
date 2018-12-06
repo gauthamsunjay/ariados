@@ -41,6 +41,7 @@
         "x": 0,
         "y": 0
       },
+      "hideTimeOverride": true,
       "id": 32,
       "interval": null,
       "links": [],
@@ -83,6 +84,8 @@
         }
       ],
       "thresholds": "",
+      "timeFrom": "10s",
+      "timeShift": "1m",
       "title": "URLs processed per second",
       "type": "singlestat",
       "valueFontSize": "80%",
@@ -430,6 +433,7 @@
         "x": 20,
         "y": 0
       },
+      "hideTimeOverride": true,
       "id": 16,
       "interval": null,
       "links": [],
@@ -468,10 +472,12 @@
       "targets": [
         {
           "refId": "A",
-          "target": "movingAverage(stats.urls.new, 1)"
+          "target": "stats.urls.new"
         }
       ],
       "thresholds": "",
+      "timeFrom": "10s",
+      "timeShift": "1m",
       "title": "New URLs per second",
       "type": "singlestat",
       "valueFontSize": "80%",
@@ -482,7 +488,7 @@
           "value": "null"
         }
       ],
-      "valueName": "current"
+      "valueName": "avg"
     },
     {
       "cacheTimeout": null,
@@ -1058,7 +1064,7 @@
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {
@@ -1089,5 +1095,5 @@
   "timezone": "",
   "title": "Ariados",
   "uid": "_Ppk5kPmz",
-  "version": 40
+  "version": 43
 }

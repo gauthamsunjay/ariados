@@ -23,7 +23,7 @@ ProcessorInput = namedtuple("ProcessorInput", ["idx", "resp"])
 ProcessorOutput = namedtuple("ProcessorOutput", ["idx", "data", "links"])
 
 def fetch(inp):
-    resp = requests.get(inp.url)
+    resp = requests.get(inp.url, timeout=3) # TODO hav a configurable timoeut?
     return ProcessorInput(idx=inp.idx, resp=resp)
 
 def fetcher(fetch_q, process_q):

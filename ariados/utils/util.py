@@ -1,6 +1,9 @@
+import logging
 import time
-import traceback
 from functools import wraps
+
+logger = logging.getLogger(__name__)
+
 
 def run_forever(fn, interval=None):
     @wraps(fn)
@@ -10,8 +13,7 @@ def run_forever(fn, interval=None):
                 fn(*args, **kwargs)
             except Exception as e:
                 # TODO log this
-                print "Got exception %r" % e
-                print traceback.format_exc()
+                logger.error("Got exception %r", e, exc_info=True)
 
             if interval is not None:
                 time.sleep(interval)

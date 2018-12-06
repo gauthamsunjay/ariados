@@ -1,7 +1,8 @@
 import datetime
+import logging
 from collections import defaultdict
 from threading import Thread
-from Queue import Queue
+from Queue import Queue, Empty
 
 from ariados.common import constants
 from ariados.common import stats
@@ -13,10 +14,13 @@ from ariados.master.invokers import AWSLambdaInvoker
 from ariados.master.db import Status
 from ariados.utils import run_forever
 
+logger = logging.getLogger(__name__)
+
+
 class Master(object):
     def __init__(self):
         self.threads = []
-        self.invoker = AWSLambdaInvoker()
+        self.invoker_factory = AWSLambdaInvoker
         self.hm = HandlerManager()
 
         self.init_crawl_queue()
@@ -24,12 +28,8 @@ class Master(object):
         self.init_workers()
         self.init_service_threads()
 
-        stats.client.gauge("lambdas.active", 0)
-        stats.client.gauge("urls.waiting_on_disk", 0)
-        stats.client.gauge("urls.waiting_in_mem", 0)
-        stats.client.gauge("urls.in_progress.in_lambda", 0)
-        stats.client.gauge("urls.completed", 0)
-        stats.client.gauge("urls.failed", 0)
+        stats.client.gauge("urls.waiting.in_mem", 0)
+
 
     def init_crawl_queue(self):
         self.crawl_queue = Queue(maxsize=constants.CRAWL_QUEUE_MAX_SIZE)
@@ -42,7 +42,7 @@ class Master(object):
     def init_workers(self):
         self.workers = []
         for i in xrange(constants.NUM_WORKERS):
-            w = Worker(self.invoker, self.crawl_queue,
+            w = Worker(self.invoker_factory, self.crawl_queue,
                 self.new_links_queue, self.completed_queue, self.store)
 
             self.workers.append(w)
@@ -82,10 +82,18 @@ class Master(object):
         self.mark_crawling_complete_thread.daemon = True
         self.mark_crawling_complete_thread.start()
 
+        self.db_stats_thread = Thread(
+            target=run_forever(self.send_db_stats, interval=10),
+            args=(Cockroach(constants.DB_NAME), ),
+        )
+        self.db_stats_thread.daemon = True
+        self.db_stats_thread.start()
+
         self.threads.extend([
             self.add_links_to_db_thread,
             self.add_links_from_db_to_cq_thread,
             self.mark_crawling_complete_thread,
+            self.db_stats_thread,
         ])
 
     def add_links_to_db(self, db):
@@ -106,7 +114,7 @@ class Master(object):
                 url = self.new_links_queue.get_nowait()
                 urls.add(url)
         except Empty:
-            break
+            pass
 
         urls = list(urls)
         start = 0
@@ -114,7 +122,6 @@ class Master(object):
         chunk = urls[start:end]
         while len(chunk) > 0:
             db.insert_links(chunk)
-            stats.client.gauge("urls.waiting_on_disk", len(chunk), delta=True)
             start = end
             end += constants.MAX_ENTRIES_PER_TRANSACTION
             chunk = urls[start:end]
@@ -122,7 +129,7 @@ class Master(object):
         now = datetime.datetime.now()
         self.add_links_to_db_last_run = now
         self.add_links_to_db_last_successful_run = now
-        print "added %d links to db" % len(urls)
+        logger.debug("added %d links to db", len(urls))
 
     def add_links_from_db_to_cq(self, db):
         now = datetime.datetime.now()
@@ -140,18 +147,24 @@ class Master(object):
 
         num_links = self.crawl_queue.maxsize - self.crawl_queue.qsize()
         links = [ld["link"] for ld in db.get_links(num_links=num_links)]
-        db.update_links(links, Status.PROCESSING)
+        start = 0
+        end = constants.MAX_ENTRIES_PER_TRANSACTION
+        chunk = links[start:end]
+        while len(chunk) > 0:
+            db.update_links(chunk, Status.PROCESSING)
+            for link in chunk:
+                self.crawl_queue.put(link)
+                stats.client.incr("crawlq.put")
 
-        stats.client.gauge("urls.waiting.in_mem", len(links), delta=True)
-        stats.client.gauge("urls.waiting.on_disk", -len(links), delta=True)
-        for link in links:
-            self.crawl_queue.put(link)
-            stats.client.incr("crawlq.put")
+            start = end
+            end += constants.MAX_ENTRIES_PER_TRANSACTION
+            chunk = links[start:end]
 
+        stats.client.gauge("urls.waiting.in_mem", self.crawl_queue.qsize())
         now = datetime.datetime.now()
         self.add_links_from_db_to_cq_last_run = now
         self.add_links_from_db_to_cq_last_successful_run = now
-        print "added %d links to cq" % len(links)
+        logger.debug("added %d links to cq", len(links))
 
     def mark_crawling_complete(self, db):
         now = datetime.datetime.now()
@@ -178,17 +191,21 @@ class Master(object):
             end = constants.MAX_ENTRIES_PER_TRANSACTION
             chunk = links[start:end]
             while len(chunk) > 0:
-                stats.client.gauge("urls.%s" % status, len(chunk), delta=True)
                 db.update_links(chunk, status=status)
                 start = end
                 end += constants.MAX_ENTRIES_PER_TRANSACTION
                 chunk = links[start:end]
 
-            print "marked %d links %s" % (len(links), status)
+            logger.debug("marked %d links %s", len(links), status)
 
         now = datetime.datetime.now()
         self.mark_crawling_complete_last_run = now
         self.mark_crawling_complete_last_successful_run = now
+
+    def send_db_stats(self, db):
+        counts = db.get_status_count()
+        for status, count in counts.iteritems():
+            stats.client.gauge("urls.%s" % status, count)
 
     def crawl_url(self, url):
         """

@@ -1,4 +1,5 @@
 import functools
+import logging
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -7,6 +8,7 @@ from db import Database, Status
 
 
 Base = declarative_base()
+logger = logging.getLogger(__name__)
 
 
 def safe_commit(fn):
@@ -33,18 +35,29 @@ class Link(Base):
 
 
 class Cockroach(Database):
-    def __init__(self, db_name, user="ariados", host="localhost", port="26257"):
+    def __init__(self, db_name, user="ariados", host="localhost", port="5432"):
         super(Cockroach, self).__init__(db_name)
         # connect in insecure mode
+        self.db_name = db_name
+        self.user = user
+        self.host = host
+        self.port = port
+        self.session = self.create_session()
+
+    def create_session(self):
+        # engine = create_engine(
+        #     "cockroachdb://%s@%s:%s/%s" % (self.user, self.host, self.port, self.db_name),
+        #     connect_args={"sslmode": "disable"}
+        # )
         engine = create_engine(
-            "cockroachdb://%s@%s:%s/%s" % (user, host, port, db_name),
-            connect_args={"sslmode": "disable"}
+            "postgresql://%s@%s:%s/%s" % (self.user, self.host, self.port,
+                                          self.db_name)
         )
         Session = sessionmaker(bind=engine)
 
         if not engine.has_table("links"):
             Base.metadata.create_all(engine)
-        self.session = Session()
+        return Session()
 
     @safe_commit
     def insert_link(self, url, status=Status.WAITING):
@@ -99,3 +112,17 @@ class Cockroach(Database):
         self.session.query(Link).filter(Link.link.in_(urls)).delete(
             synchronize_session="fetch"
         )
+
+    def get_status_count(self):
+        ret = {Status.WAITING: 0, Status.PROCESSING: 0, Status.FAILED: 0,
+               Status.COMPLETED: 0}
+        session = self.create_session()
+        query = session.execute(
+            "select status, count(*) from links group by status"
+        )
+        counts = query.fetchall()
+        for status, count in counts:
+            ret[status] = count
+        session.close()
+
+        return ret

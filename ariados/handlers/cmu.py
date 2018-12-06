@@ -7,9 +7,22 @@ from StringIO import StringIO
 from ariados.decorators import handler
 
 SOURCE = 'cmu'
-DOMAINS = ['www.cmu.edu', 'www.cs.cmu.edu']
-STARTUP_LINKS = ['https://www.cs.cmu.edu/calendar']
 
+DOMAINS = [
+    'www.analytics.tepper.cmu.edu', 'www.ms-product-management.cmu.edu', 'www.music.cmu.edu', 'www.neon.mems.cmu.edu', 'www.sv.cmu.edu',
+    'www.arc.cmu.edu', 'www.australia.cmu.edu', 'www.bme.cmu.edu', 'www.cbd.cmu.edu', 'www.cfa.cmu.edu', 'www.chem.cmu.edu',
+    'www.cheme.cmu.edu', 'www.cmu.edu', 'www.csd.cs.cmu.edu', 'www.design.cmu.edu', 'www.drama.cmu.edu', 'www.ece.cmu.edu',
+    'www.epp.cmu.edu', 'www.etc.cmu.edu', 'www.hcii.cmu.edu', 'www.heinz.cmu.edu', 'www.hss.cmu.edu', 'www.ini.cmu.edu',
+    'www.isri.cmu.edu', 'www.isri.cs.cmu.edu', 'www.lti.cs.cmu.edu', 'www.math.cmu.edu', 'www.ml.cmu.edu', 'www.psy.cmu.edu',
+    'www.ri.cmu.edu', 'www.stat.cmu.edu', 'www.tepper.cmu.edu',
+]
+
+startup_link_set = set()
+startup_link_set.add("https://www.cmu.edu/sitemap/index.html")
+for i in DOMAINS:
+    startup_link_set.add(i)
+
+STARTUP_LINKS = list(startup_link_set)
 
 def canonicalize_url(url):
     url = urlparse.urlparse(url)
@@ -18,59 +31,25 @@ def canonicalize_url(url):
         params='', query=url.query, fragment='')
     return urlparse.urlunparse(pr)
 
-
-@handler(r"^/calendar/(mon|tue|wed|thu|fri|sat|sun)-\d{4}-\d{2}-\d{2}-\d{4}/.*")
-def parse_events(resp):
+@handler(r'.*')
+def parse_everything(resp):
     data = resp.content
     parser = etree.HTMLParser()
     tree = etree.parse(StringIO(data), parser)
 
-    title = tree.xpath("//h1[@id='page-title']/text()")
-    title = title[0].strip() if title else ""
+    title = tree.xpath('//head/title/text()')[0]
+    text = ''
+    body_tag = tree.xpath('body')
+    if len(body_tag) > 0:
+        body_tag = body_tag[0]
+        text = ''.join(body_tag.itertext())
 
-    event_type = tree.xpath("//div[contains(@class,'event__label')]/text()")
-    event_type = event_type[0].strip() if event_type else ""
+    data = {
+        'url': resp.url,
+        'title': title,
+        'text': text,
+    }
 
-    day = tree.xpath("//div[contains(@class, 'event__date')]/time[@datetime]/text()")
-    day = day[0].strip() if day else ""
-    if day.endswith("-"):
-        day = day.rstrip("-").strip()
-
-    start_time = tree.xpath("//div[contains(@class, 'event__date')]//span[contains(@class,'date-display-start')]/text()")
-    start_time = start_time[0].strip() if start_time else ""
-
-    end_time = tree.xpath("//div[contains(@class, 'event__date')]//span[contains(@class,'date-display-end')]/text()")
-    end_time = end_time[0].strip() if end_time else ""
-
-    location = tree.xpath("//ul[contains(@class, 'event__location-information semantic')]/li/text()")
-    location = "\n".join(location).strip()
-
-    body = tree.xpath("//div[contains(@class, 'event__content')]/descendant::node()/text()")
-    body = "\n".join(body).strip()
-
-    speaker = tree.xpath("//li[contains(@class, 'event__speaker-name')]/descendant::node()/text()")
-    speaker = speaker[0].strip() if speaker else ""
-
-    result = OrderedDict()
-    result["title"] = title
-    result["event_type"] = event_type
-    result["start_time"] = start_time
-    result["end_time"] = end_time
-    result["day"] = day
-    result["location"] = location
-    result["speaker"] = speaker
-    result["body"] = body
-
-    return result, []
-
-
-@handler(r'^/calendar($|\?page=.*)')
-def parse_calendar(resp):
-    data = resp.content
-    parser = etree.HTMLParser()
-    tree = etree.parse(StringIO(data), parser)
-
-    links = tree.xpath("//ul[@class='events-teasers-list semantic']//a/@href")
-    links = map(lambda link: urlparse.urljoin(resp.url, link), links)
-
-    return None, links
+    links = tree.xpath('//a/@href')
+    links = map(lambda x: urlparse.urljoin(resp.url, x), links)
+    return data, links

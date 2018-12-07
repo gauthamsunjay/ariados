@@ -1,11 +1,14 @@
 import boto3
 import json
+import logging
 import os
 import time
 
 from botocore.exceptions import ReadTimeoutError
 
 from ariados.common import stats
+
+logger = logging.getLogger(__name__)
 
 class Invoker(object):
     def __init__(self):
@@ -67,10 +70,10 @@ class AWSLambdaInvoker(Invoker):
         try:
             result = self.invoke("handle_multiple_urls", payload)
             jresult = json.loads(result["Payload"].read().decode("utf-8"))
-            if not jresult['success']:
-                # if not a success, something wrong with the lambda itself.
-                # TODO log this
-                raise Exception("Got bad response %r" % jresult)
+            success = jresult.get("success", None)
+            if success in (None, False):
+                logger.error("Got bad lambda response %r", jresult)
+                raise Exception("Got bad lambda response %r", jresult)
 
             return jresult['result']
         except Exception as ex:

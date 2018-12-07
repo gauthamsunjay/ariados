@@ -40,8 +40,14 @@ STARTUP_LINKS = list(startup_link_set)
 
 def canonicalize_url(url):
     url = urlparse.urlparse(url)
+    # NOTE we do not want any big files or images or anything like that
+    path = url.path.rstrip('/')
+    splits = path.rsplit('.', 1)
+    if len(splits) == 2 and splits[-1] != "html":
+        return "http://lets-not-crawl-this.com"
+
     pr = urlparse.ParseResult(
-        scheme=url.scheme, netloc=url.netloc, path=url.path.rstrip('/'),
+        scheme=url.scheme, netloc=url.netloc, path=path,
         params='', query=url.query, fragment='')
     return urlparse.urlunparse(pr)
 

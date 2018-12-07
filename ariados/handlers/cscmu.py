@@ -65,7 +65,7 @@ def parse_events(resp):
     return result, []
 
 
-@handler(r'^/calendar($|\?page=.*)')
+@handler(r'^/calendar')
 def parse_calendar(resp):
     data = resp.content
     parser = etree.HTMLParser()

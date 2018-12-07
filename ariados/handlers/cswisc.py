@@ -55,7 +55,7 @@ def parse_events(resp):
 
     return result, []
 
-@handler(r'^/calendar/month/\d{4}-\d{2}$')
+@handler(r'^/calendar/month/\d{4}-\d+$')
 def parse_calendar_page(resp):
     data = resp.content
     soup = BeautifulSoup(data, 'html.parser')

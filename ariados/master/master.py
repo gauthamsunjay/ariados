@@ -29,7 +29,22 @@ class Master(object):
         self.init_service_threads()
 
         stats.client.gauge("urls.waiting.in_mem", 0)
+        self.publish_constants_as_gauges()
 
+    def publish_constants_as_gauges(self):
+        for name in dir(constants):
+            if name.startswith("_"):
+                continue
+
+            if not name.isupper():
+                continue
+
+            value = getattr(constants, name)
+            if not isinstance(value, (int, float)):
+                continue
+
+            stat_name = name.lower()
+            stats.client.gauge('constants.%s' % stat_name, value)
 
     def init_crawl_queue(self):
         self.crawl_queue = Queue(maxsize=constants.CRAWL_QUEUE_MAX_SIZE)

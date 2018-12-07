@@ -23,7 +23,7 @@ ProcessorInput = namedtuple("ProcessorInput", ["idx", "resp"])
 ProcessorOutput = namedtuple("ProcessorOutput", ["idx", "data", "links"])
 
 def fetch(inp):
-    resp = requests.get(inp.url, timeout=10) # TODO hav a configurable timoeut?
+    resp = requests.get(inp.url, timeout=3, allow_redirects=False) # TODO hav a configurable timoeut?
     return ProcessorInput(idx=inp.idx, resp=resp)
 
 def fetcher(fetch_q, process_q):
@@ -52,6 +52,11 @@ def process(hm, inp):
     assert isinstance(inp, ProcessorInput), "expected ProcessorInput but got %r" % type(inp)
 
     inp.resp.raise_for_status()
+    if inp.resp.is_redirect:
+        c_link = hm.canonicalize_url(inp.resp.headers["Location"])
+        if hm.get_handler_for_url(c_link) is not None:
+            return ProcessorOutput(idx=inp.idx, data={}, links=[c_link])
+
 
     # TODO should we canonicalize? Do we assume canonical urls are provided to us?
     # is it cheap to do canonicalization here?
@@ -111,9 +116,9 @@ def handle_single_url(event, context):
 
     output = output_q.get()
     if isinstance(output, ErrorItem):
-        return { 'success': False, 'error': output.traceback }
+        return { 'url': url, 'success': False, 'error': output.traceback }
 
-    return {'success': True, 'data': output.data, 'links': output.links }
+    return {'url': url, 'success': True, 'data': output.data, 'links': output.links }
 
 def handle_multiple_urls(event, context):
     urls = event.get('urls', None)

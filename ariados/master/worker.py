@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Worker(Thread):
     def __init__(self, invoker_factory, worker_queue, new_links_queue,
-                 completed_queue, store, multiple=True):
+                 completed_queue, results_queue, store, multiple=True):
         super(Worker, self).__init__()
         self.daemon = True
 
@@ -22,17 +22,9 @@ class Worker(Thread):
         self.worker_queue = worker_queue
         self.new_links_queue = new_links_queue
         self.completed_queue = completed_queue
+        self.results_queue = results_queue
         self.store = store
         self.invoker = invoker_factory()
-
-    def handle_data(self, result):
-        data, links = result['data'], result['links']
-        self.store.store(data)
-        for link in links:
-            logger.debug("added new link %s", link)
-            self.new_links_queue.put(link)
-            # should we add this here or when we are adding the link to db?
-            stats.client.incr("urls.new")
 
     def run_single(self):
         while True:
@@ -45,19 +37,10 @@ class Worker(Thread):
             logger.debug("Processing url: %s", url)
             try:
                 result = self.invoker.handle_single_url(url)
+                self.results_queue.put(result)
             except Exception:
                 self.completed_queue.put((url, Status.FAILED))
                 logger.error("Failed to handle url %s", url, exc_info=True)
-                continue
-
-            if not result['success']:
-                self.completed_queue.put((url, Status.FAILED))
-                logger.error("Failed to handle url %s", url)
-                logger.error(result["error"])
-                continue
-
-            self.completed_queue.put((url, Status.COMPLETED))
-            self.handle_data(result)
 
     def run_multiple(self):
         while True:
@@ -66,21 +49,11 @@ class Worker(Thread):
             logger.debug("Processing %d urls", len(urls))
             try:
                 result = self.invoker.handle_multiple_urls(urls)
+                self.results_queue.put(result)
             except Exception:
                 for url in urls:
                     self.completed_queue.put((url, Status.FAILED))
                 logger.error("Failed to handle %d urls", len(urls), exc_info=True)
-                continue
-
-            for output in result:
-                if not output['success']:
-                    self.completed_queue.put((output["url"], Status.FAILED))
-                    logger.error("Failed to handle url %s", output["url"])
-                    logger.error(output["error"])
-                    continue
-
-                self.completed_queue.put((output["url"], Status.COMPLETED))
-                self.handle_data(output)
 
     def run(self):
         if self.multiple:

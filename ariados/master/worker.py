@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 class Worker(Thread):
-    def __init__(self, invoker_factory, crawl_queue, new_links_queue,
+    def __init__(self, invoker_factory, worker_queue, new_links_queue,
                  completed_queue, store, multiple=True):
         super(Worker, self).__init__()
         self.daemon = True
 
         self.multiple = multiple
-        self.crawl_queue = crawl_queue
+        self.worker_queue = worker_queue
         self.new_links_queue = new_links_queue
         self.completed_queue = completed_queue
         self.store = store
@@ -37,7 +37,7 @@ class Worker(Thread):
     def run_single(self):
         while True:
             try:
-                url = self.crawl_queue.get(timeout=2)
+                url = self.worker_queue.get(timeout=2)
                 stats.client.incr("crawlq.get")
             except Empty:
                 continue
@@ -61,23 +61,8 @@ class Worker(Thread):
 
     def run_multiple(self):
         while True:
-            urls = []
-            start_time = time.time()
-            while True:
-                try:
-                    url = self.crawl_queue.get(timeout=2)
-                    stats.client.incr("crawlq.get")
-                    urls.append(url)
-                    if len(urls) >= constants.URL_BATCH_SIZE:
-                        break
-                except Empty:
-                    end_time = time.time()
-                    if (end_time - start_time) > constants.URL_BATCH_MAX_WAIT_TIME:
-                        break
-
-            if len(urls) == 0:
-                continue
-
+            urls = self.worker_queue.get()
+            stats.client.incr("crawlq.get", len(urls))
             logger.debug("Processing %d urls", len(urls))
             try:
                 result = self.invoker.handle_multiple_urls(urls)

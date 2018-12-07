@@ -1,5 +1,6 @@
 import datetime
 import logging
+import time
 from collections import defaultdict
 from threading import Thread
 from Queue import Queue, Empty
@@ -18,7 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class Master(object):
-    def __init__(self):
+    def __init__(self, multiple=True):
+        self.multiple = multiple
         self.threads = []
         self.invoker_factory = AWSLambdaInvoker
         self.hm = HandlerManager()
@@ -50,14 +52,16 @@ class Master(object):
         self.crawl_queue = Queue(maxsize=constants.CRAWL_QUEUE_MAX_SIZE)
         self.new_links_queue = Queue(maxsize=constants.NEW_LINKS_QUEUE_MAX_SIZE)
         self.completed_queue = Queue(maxsize=constants.COMPLETED_QUEUE_MAX_SIZE)
+        self.worker_queue = Queue(maxsize=constants.BATCH_QUEUE_MAX_SIZE)
 
     def init_store(self):
         self.store = JsonStore()
 
     def init_workers(self):
+        worker_queue = self.worker_queue if self.multiple else self.crawl_queue
         self.workers = []
         for i in xrange(constants.NUM_WORKERS):
-            w = Worker(self.invoker_factory, self.crawl_queue,
+            w = Worker(self.invoker_factory, worker_queue,
                 self.new_links_queue, self.completed_queue, self.store)
 
             self.workers.append(w)
@@ -110,6 +114,17 @@ class Master(object):
             self.mark_crawling_complete_thread,
             self.db_stats_thread,
         ])
+
+        if not self.multiple:
+            return
+
+        self.batcher_thread = Thread(
+            target=run_forever(self.batcher, interval=0.1),
+            args=(self.crawl_queue, self.worker_queue,),
+        )
+        self.batcher_thread.daemon = True
+        self.batcher_thread.start()
+        self.threads.append(self.batcher_thread)
 
     def add_links_to_db(self, db):
         now = datetime.datetime.now()
@@ -221,6 +236,25 @@ class Master(object):
         counts = db.get_status_count()
         for status, count in counts.iteritems():
             stats.client.gauge("urls.%s" % status, count)
+
+    def batcher(self, crawl_queue, worker_queue):
+        start_time = time.time()
+        urls = []
+        while True:
+            try:
+                url = crawl_queue.get(timeout=2)
+                urls.append(url)
+                if len(urls) >= constants.URL_BATCH_SIZE:
+                    break
+            except Empty:
+                end_time = time.time()
+                if (end_time - start_time) >= constants.URL_BATCH_MAX_WAIT_TIME:
+                    break
+
+        if len(urls) == 0:
+            return
+
+        worker_queue.put(urls)
 
     def crawl_url(self, url):
         """

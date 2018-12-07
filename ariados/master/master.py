@@ -53,6 +53,7 @@ class Master(object):
         self.new_links_queue = Queue(maxsize=constants.NEW_LINKS_QUEUE_MAX_SIZE)
         self.completed_queue = Queue(maxsize=constants.COMPLETED_QUEUE_MAX_SIZE)
         self.worker_queue = Queue(maxsize=constants.BATCH_QUEUE_MAX_SIZE)
+        self.results_queue = Queue(maxsize=constants.RESULTS_QUEUE_MAX_SIZE)
 
     def init_store(self):
         self.store = JsonStore()
@@ -62,7 +63,8 @@ class Master(object):
         self.workers = []
         for i in xrange(constants.NUM_WORKERS):
             w = Worker(self.invoker_factory, worker_queue,
-                self.new_links_queue, self.completed_queue, self.store)
+                       self.new_links_queue, self.completed_queue,
+                       self.results_queue, self.store)
 
             self.workers.append(w)
             self.threads.append(w)
@@ -108,10 +110,17 @@ class Master(object):
         self.db_stats_thread.daemon = True
         self.db_stats_thread.start()
 
+        self.results_handler_thread = Thread(
+            target=run_forever(self.results_handler, interval=0.1),
+        )
+        self.results_handler_thread.daemon = True
+        self.results_handler_thread.start()
+
         self.threads.extend([
             self.add_links_to_db_thread,
             self.add_links_from_db_to_cq_thread,
             self.mark_crawling_complete_thread,
+            self.results_handler_thread,
             self.db_stats_thread,
         ])
 
@@ -255,6 +264,34 @@ class Master(object):
             return
 
         worker_queue.put(urls)
+
+    def handle_data(self, result):
+        url = result['url']
+        if not result['success']:
+            self.completed_queue.put((url, Status.FAILED))
+            logger.error("Failed to handle url %s", url)
+            logger.error(result["error"])
+            return
+
+        self.completed_queue.put((url, Status.COMPLETED))
+        data, links = result['data'], result['links']
+        if data:
+            self.store.store(data)
+
+        for link in links:
+            logger.debug("added new link %s", link)
+            self.new_links_queue.put(link)
+            # should we add this here or when we are adding the link to db?
+            stats.client.incr("urls.new")
+
+    def results_handler(self):
+        while True:
+            lambda_result = self.results_queue.get()
+            if self.multiple:
+                for lr in lambda_result:
+                    self.handle_data(lr)
+            else:
+                self.handle_data(lambda_result)
 
     def crawl_url(self, url):
         """

@@ -173,7 +173,7 @@ def handle_multiple_urls(event, context):
 
         output.append({
             "success": True,
-            "idx": out.processor_inp.fetcher_inp.idx,
+            "idx": out.idx,
             "url": urls[out.idx],
             "data": out.data,
             "links": out.links,

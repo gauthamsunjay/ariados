@@ -60,12 +60,26 @@ class AWSLambdaInvoker(Invoker):
         returns a list of dictionaries, each having a success flag along with
         idx, url. data and links are included if success is True, otherwise 'error'
         """
+        stats.client.incr("lambdas.urls.processing", len(urls))
         payload = json.dumps({"urls": urls})
-        result = self.invoke("handle_multiple_urls", payload)
-        jresult = json.loads(result["Payload"].read().decode("utf-8"))
-        if not jresult['success']:
-            # if not a success, something wrong with the lambda itself.
-            # TODO log this
-            raise Exception("Got bad response %r" % jresult)
+        stat = "lambdas.invocation.success"
+        start = time.time()
+        try:
+            result = self.invoke("handle_multiple_urls", payload)
+            jresult = json.loads(result["Payload"].read().decode("utf-8"))
+            if not jresult['success']:
+                # if not a success, something wrong with the lambda itself.
+                # TODO log this
+                raise Exception("Got bad response %r" % jresult)
 
-        return jresult['result']
+            return jresult['result']
+        except Exception as ex:
+            if isinstance(ex, ReadTimeoutError):
+                stat = "lambdas.invocation.failure.timeout"
+            else:
+                stat = "lambdas.invocation.failure"
+            raise
+        finally:
+            end = time.time()
+            delta = (end - start) * 1000
+            stats.client.timing(stat, delta)

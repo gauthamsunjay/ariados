@@ -1,4 +1,53 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_GRAPHITEARIADOS",
+      "label": "GraphiteAriados",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "graphite",
+      "pluginName": "Graphite"
+    },
+    {
+      "name": "VAR_PREFIX",
+      "type": "constant",
+      "label": "prefix",
+      "value": "ariados",
+      "description": ""
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "5.1.0"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": "5.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "graphite",
+      "name": "Graphite",
+      "version": "5.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "singlestat",
+      "name": "Singlestat",
+      "version": "5.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": "5.0.0"
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -15,8 +64,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 3,
-  "iteration": 1544142989549,
+  "id": null,
+  "iteration": 1544162480149,
   "links": [],
   "panels": [
     {
@@ -26,6 +75,7 @@
           "value": "current"
         }
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "fontSize": "100%",
       "gridPos": {
         "h": 12,
@@ -80,6 +130,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -133,12 +184,13 @@
       "targets": [
         {
           "refId": "A",
-          "target": "stats.$prefix.lambdas.urls.processing"
+          "target": "stats.$prefix.lambdas.urls.processing",
+          "textEditor": true
         }
       ],
       "thresholds": "",
-      "timeFrom": "10s",
-      "timeShift": "1m",
+      "timeFrom": null,
+      "timeShift": null,
       "title": "URLs processed per second",
       "type": "singlestat",
       "valueFontSize": "80%",
@@ -160,6 +212,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -238,6 +291,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "description": "New URLs added to the database per second",
       "format": "short",
       "gauge": {
@@ -319,6 +373,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -397,6 +452,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "description": "Number of URLs marked completed in the database",
       "format": "short",
       "gauge": {
@@ -475,6 +531,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -552,6 +609,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -631,6 +689,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -708,6 +767,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "ms",
       "gauge": {
         "maxValue": 100,
@@ -785,6 +845,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -862,6 +923,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -935,6 +997,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "description": "Amount of time taken for a lambda invocation",
       "fill": 1,
       "gridPos": {
@@ -1023,12 +1086,179 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "fill": 1,
       "gridPos": {
         "h": 9,
         "w": 12,
         "x": 12,
         "y": 12
+      },
+      "id": 38,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refCount": 0,
+          "refId": "A",
+          "target": "perSecond(sumSeries(stats.gauges.ariados.urls.completed, stats.gauges.ariados.urls.failed))",
+          "textEditor": false
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "urls completed per sec",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_GRAPHITEARIADOS}",
+      "fill": 1,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "id": 36,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refCount": 0,
+          "refId": "A",
+          "target": "movingAverage(stats.$prefix.lambdas.urls.processing, '$interval', 0)",
+          "textEditor": false
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "urls per n seconds",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_GRAPHITEARIADOS}",
+      "fill": 1,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 21
       },
       "id": 12,
       "legend": {
@@ -1078,7 +1308,7 @@
       },
       "yaxes": [
         {
-          "format": "short",
+          "format": "decbytes",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1104,12 +1334,13 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": "${DS_GRAPHITEARIADOS}",
       "fill": 1,
       "gridPos": {
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 30
       },
       "id": 10,
       "legend": {
@@ -1196,20 +1427,19 @@
     "list": [
       {
         "current": {
-          "text": "ariados",
-          "value": "ariados"
+          "value": "${VAR_PREFIX}",
+          "text": "${VAR_PREFIX}"
         },
         "hide": 0,
         "label": null,
         "name": "prefix",
         "options": [
           {
-            "selected": true,
-            "text": "ariados",
-            "value": "ariados"
+            "value": "${VAR_PREFIX}",
+            "text": "${VAR_PREFIX}"
           }
         ],
-        "query": "ariados",
+        "query": "${VAR_PREFIX}",
         "skipUrlSync": false,
         "type": "constant"
       },
@@ -1284,7 +1514,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {
@@ -1315,5 +1545,5 @@
   "timezone": "",
   "title": "Ariados",
   "uid": "_Ppk5kPmz",
-  "version": 2
+  "version": 5
 }

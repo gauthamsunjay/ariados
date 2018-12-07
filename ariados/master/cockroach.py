@@ -18,7 +18,7 @@ def safe_commit(fn):
             fn(self, *args, **kwargs)
             self.session.commit()
         except Exception:
-            self.session.rollback()
+            # self.session.rollback()
             raise
     return wrapper
 
@@ -29,6 +29,7 @@ class Link(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     link = Column(String, nullable=False, unique=True)
     status = Column(String, default=Status.WAITING)
+
 
     def to_dict(self):
         return {"link": self.link, "status": self.status}
@@ -116,13 +117,14 @@ class Cockroach(Database):
     def get_status_count(self):
         ret = {Status.WAITING: 0, Status.PROCESSING: 0, Status.FAILED: 0,
                Status.COMPLETED: 0}
-        session = self.create_session()
+        #session = self.create_session()
+        session = self.session
         query = session.execute(
             "select status, count(*) from links group by status"
         )
         counts = query.fetchall()
         for status, count in counts:
             ret[status] = count
-        session.close()
+        #session.close()
 
         return ret

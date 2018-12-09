@@ -3,7 +3,7 @@ import logging
 from threading import Thread
 from Queue import Empty
 
-from ariados.common import stats
+from ariados.common import stats, constants
 from .pgdb import Status
 
 logger = logging.getLogger(__name__)
@@ -43,5 +43,44 @@ class Worker(Thread):
             finally:
                 self.update_queue.put((url, status))
 
+    def run_multiple(self):
+        while True:
+            batch = []
+            try:
+                while True:
+                    url = self.worker_queue.get(timeout=3)
+                    batch.append(url)
+                    if len(batch) >= constants.WORKER_BATCH_SIZE:
+                        break
+            except Empty:
+                pass
+
+            if len(batch) == 0:
+                continue
+
+            try:
+                results = self.invoker.handle_multiple_urls(batch)
+                for result in results:
+                    url = result['url']
+                    if not result['success']:
+                        self.update_queue.put((url, Status.FAILED))
+                        logger.error("Failed to handle url %s" , url)
+                        logger.error(result["error"])
+                        continue
+
+                    self.update_queue.put((url, Status.COMPLETED))
+                    data, links = result['data'], result['links']
+                    if data:
+                        self.store_queue.put(data)
+
+                    for link in links:
+                        self.insert_queue.put(link)
+
+            except Exception:
+                for url in batch:
+                    self.update_queue.put((url, Status.FAILED))
+
+                logger.error("Failed to handle %d urls", len(batch), exc_info=True)
+
     def run(self):
-        self.run_single()
+        self.run_multiple()

@@ -49,6 +49,7 @@ class Worker(Thread):
             try:
                 while True:
                     url = self.worker_queue.get(timeout=3)
+                    stats.client.incr("crawlq.get")
                     batch.append(url)
                     if len(batch) >= constants.WORKER_BATCH_SIZE:
                         break

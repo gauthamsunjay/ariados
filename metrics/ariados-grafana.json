@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_GRAPHITEARIADOS",
-      "label": "GraphiteAriados",
+      "name": "DS_GRAPHITE",
+      "label": "Graphite",
       "description": "",
       "type": "datasource",
       "pluginId": "graphite",
@@ -65,7 +65,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1544162480149,
+  "iteration": 1544395228776,
   "links": [],
   "panels": [
     {
@@ -75,7 +75,7 @@
           "value": "current"
         }
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "fontSize": "100%",
       "gridPos": {
         "h": 12,
@@ -130,7 +130,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -184,13 +184,12 @@
       "targets": [
         {
           "refId": "A",
-          "target": "stats.$prefix.lambdas.urls.processing",
-          "textEditor": true
+          "target": "stats.$prefix.lambdas.urls.processing"
         }
       ],
       "thresholds": "",
-      "timeFrom": null,
-      "timeShift": null,
+      "timeFrom": "10s",
+      "timeShift": "1m",
       "title": "URLs processed per second",
       "type": "singlestat",
       "valueFontSize": "80%",
@@ -212,7 +211,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -291,9 +290,9 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
-      "description": "New URLs added to the database per second",
-      "format": "short",
+      "datasource": "${DS_GRAPHITE}",
+      "description": "time to fill memqueue from disk",
+      "format": "ms",
       "gauge": {
         "maxValue": 100,
         "minValue": 0,
@@ -346,13 +345,14 @@
       "targets": [
         {
           "refId": "A",
-          "target": "stats.$prefix.urls.new"
+          "target": "stats.timers.$prefix.insert_into_crawlqueue.mean",
+          "textEditor": false
         }
       ],
       "thresholds": "",
       "timeFrom": "10s",
       "timeShift": "1m",
-      "title": "New URLs per second",
+      "title": "disk -> memqueue time",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -373,7 +373,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -452,7 +452,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "description": "Number of URLs marked completed in the database",
       "format": "short",
       "gauge": {
@@ -531,7 +531,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -609,7 +609,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -689,7 +689,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -767,7 +767,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "ms",
       "gauge": {
         "maxValue": 100,
@@ -845,7 +845,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -923,7 +923,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "format": "short",
       "gauge": {
         "maxValue": 100,
@@ -997,7 +997,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "description": "Amount of time taken for a lambda invocation",
       "fill": 1,
       "gridPos": {
@@ -1086,179 +1086,13 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "fill": 1,
       "gridPos": {
         "h": 9,
         "w": 12,
         "x": 12,
         "y": 12
-      },
-      "id": 38,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "refCount": 0,
-          "refId": "A",
-          "target": "perSecond(sumSeries(stats.gauges.ariados.urls.completed, stats.gauges.ariados.urls.failed))",
-          "textEditor": false
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "urls completed per sec",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_GRAPHITEARIADOS}",
-      "fill": 1,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 21
-      },
-      "id": 36,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "refCount": 0,
-          "refId": "A",
-          "target": "movingAverage(stats.$prefix.lambdas.urls.processing, '$interval', 0)",
-          "textEditor": false
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "urls per n seconds",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_GRAPHITEARIADOS}",
-      "fill": 1,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 21
       },
       "id": 12,
       "legend": {
@@ -1285,14 +1119,14 @@
       "targets": [
         {
           "refId": "A",
-          "target": "movingAverage(stats.$prefix.store.writes, 1)"
+          "target": "sumSeries(stats.gauges.ariados.urls.completed, stats.gauges.ariados.urls.failed)"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Bytes Written",
+      "title": "URLs finished",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1308,7 +1142,7 @@
       },
       "yaxes": [
         {
-          "format": "decbytes",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1334,13 +1168,13 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_GRAPHITEARIADOS}",
+      "datasource": "${DS_GRAPHITE}",
       "fill": 1,
       "gridPos": {
-        "h": 7,
-        "w": 24,
+        "h": 9,
+        "w": 12,
         "x": 0,
-        "y": 30
+        "y": 21
       },
       "id": 10,
       "legend": {
@@ -1406,6 +1240,93 @@
         },
         {
           "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_GRAPHITE}",
+      "fill": 1,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
+      "id": 36,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "refCount": 0,
+          "refId": "A",
+          "target": "alias(stats.timers.$prefix.db.insert_batch.mean, 'writesToDB')"
+        },
+        {
+          "refCount": 0,
+          "refId": "B",
+          "target": "alias(stats.timers.$prefix.db.update_batch.mean, 'updatesToDB')"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Writes To DB",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "ms",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1514,7 +1435,7 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {

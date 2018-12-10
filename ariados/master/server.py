@@ -1,43 +1,48 @@
 import logging
 import traceback
+import json
 
-import flask
+import tornado.web
+import tornado.ioloop
 
 from .master import Master
-
 logger = logging.getLogger(__name__)
+
+class MasterHandler(tornado.web.RequestHandler):
+    def initialize(self, master_fns):
+        self.master_fns = master_fns
+
+    def post(self, path):
+        data = {}
+        try:
+            data = json.loads(self.request.body)
+        except:
+            pass
+
+        fn = self.master_fns.get(path)
+        if fn is None:
+            self.write(json.dumps({"status": -1, "msg": "%r is not a valid function" % path}))
+            return
+
+        try:
+            response = fn(**data)
+            self.write(json.dumps({"status": 0, "result": response}))
+        except Exception as e:
+            logger.error("Got error for function", exc_info=True)
+            self.write(json.dumps({"status": -1, "msg": repr(e), "traceback": traceback.format_exc()}))
+
 
 def run_server(host, port, master):
     assert isinstance(master, Master), "expected Master found %r" % type(master)
 
     master_functions = master.get_http_endpoints()
 
-    app = flask.Flask(__name__)
-    @app.route('/', defaults={'path': ''}, methods=("GET", "POST"))
-    @app.route('/<path:path>', methods=("GET", "POST"))
-    def catch_all(path):
-        fn = master_functions.get(path)
-        if fn is None:
-            return flask.jsonify({'status': -1, 'msg': '%r is not a valid function' % path})
+    handlers = [
+            (r'/(.*)', MasterHandler, {"master_fns": master_functions}),
+    ]
 
-        data = {}
-        if flask.request.method == "POST":
-            try:
-                data = flask.request.get_json(force=True) or {}
-            except:
-                return flask.jsonify({'status': -1, 'msg': 'require valid json'})
-
-        elif flask.request.method == "GET":
-            data = flask.request.args or {}
-            data = {k:v for k,v in data.iteritems()}
-        else:
-            return flask.jsonify({'status': -1, 'msg': 'Only POST or GET allowed'})
-
-        try:
-            response = fn(**data)
-            return flask.jsonify({'status': 0, 'result': response})
-        except Exception as e:
-            logger.error("Got error for function", exc_info=True)
-            return flask.jsonify({'status': -1, 'msg': repr(e), 'traceback': traceback.format_exc()})
-
-    app.run(host=host, port=port)
+    logger.info("starting...")
+    app = tornado.web.Application(handlers)
+    app.listen(port)
+    tornado.ioloop.IOLoop.instance().start()
+    logger.info("tornado stopped..")

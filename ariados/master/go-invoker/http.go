@@ -79,11 +79,13 @@ func (s *Server) invoke(payload []byte, fn string) {
     }
 
     resp, err := s.client.Post(url, "application/json", buf)
-    defer resp.Body.Close()
     if err != nil {
         log.Error("failed to send response to callback", "error", err)
+        return
     }
+
     log.Info("Sent callback", "resp", resp)
+    resp.Body.Close()
 }
 
 func (s *Server) handleSingleURL(w http.ResponseWriter, req *http.Request) {

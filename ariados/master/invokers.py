@@ -35,7 +35,7 @@ class AWSAsyncLambdaInvoker(Invoker):
         raise NotImplementedError
 
     def handle_multiple_urls(self, urls):
-        stats.client.incr("lambads.urls.processing", len(urls))
+        stats.client.incr("lambdas.urls.processing", len(urls))
         self.lambda_free_cond.acquire()
         while self.num_active_lambdas >= constants.MAX_ACTIVE_LAMBDAS:
             self.lambda_free_cond.wait()

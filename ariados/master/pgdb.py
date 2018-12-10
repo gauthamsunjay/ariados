@@ -46,7 +46,7 @@ class PostgresDB(object):
     def insert_batch(self, batch):
         cursor = self.conn.cursor()
         batch_with_ids = [
-            (hashlib.md5(link).hexdigest(), link) for link in batch
+            (hashlib.md5(link.encode('utf-8')).hexdigest(), link) for link in batch
         ]
 
         execute_values(cursor, """INSERT INTO links (id, link) VALUES %s ON CONFLICT(id) DO NOTHING""", batch_with_ids)
@@ -56,7 +56,7 @@ class PostgresDB(object):
     def update_batch(self, batch):
         cursor = self.conn.cursor()
         batch_with_ids = [
-            (hashlib.md5(link).hexdigest(), status) for link, status in batch
+            (hashlib.md5(link.encode('utf-8')).hexdigest(), status) for link, status in batch
         ]
 
         execute_values(cursor, """UPDATE links SET status = data.status FROM (VALUES %s) AS data (id, status) WHERE links.id = data.id""", batch_with_ids)

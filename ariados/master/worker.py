@@ -9,7 +9,8 @@ from .pgdb import Status
 logger = logging.getLogger(__name__)
 
 class Worker(Thread):
-    def __init__(self, invoker_factory, worker_queue, insert_queue, update_queue, store_queue):
+    def __init__(self, invoker_factory, worker_queue, insert_queue, update_queue, store_queue,
+            result_queue):
         super(Worker, self).__init__()
 
         self.invoker = invoker_factory()
@@ -17,6 +18,7 @@ class Worker(Thread):
         self.insert_queue = insert_queue
         self.update_queue = update_queue
         self.store_queue = store_queue
+        self.result_queue = result_queue
 
     def run_single(self):
         while True:
@@ -50,22 +52,7 @@ class Worker(Thread):
 
             try:
                 results = self.invoker.handle_multiple_urls(batch)
-                for result in results:
-                    url = result['url']
-                    if not result['success']:
-                        self.update_queue.put((url, Status.FAILED))
-                        logger.error("Failed to handle url %s" , url)
-                        logger.error(result["error"])
-                        continue
-
-                    self.update_queue.put((url, Status.COMPLETED))
-                    data, links = result['data'], result['links']
-                    if data:
-                        self.store_queue.put(data)
-
-                    for link in links:
-                        self.insert_queue.put(link)
-
+                self.result_queue.put(results)
             except Exception:
                 for url in batch:
                     self.update_queue.put((url, Status.FAILED))

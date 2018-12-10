@@ -58,6 +58,7 @@ class Master(object):
         self.update_db_queue = Queue(maxsize=constants.UPDATE_DB_QUEUE_MAX_SIZE)
         self.store_queue = Queue(maxsize=constants.STORE_QUEUE_MAX_SIZE)
         self.batch_queue = Queue(maxsize=constants.BATCH_QUEUE_MAX_SIZE)
+        self.result_queue = Queue(maxsize=constants.RESULT_QUEUE_MAX_SIZE)
 
     def init_store(self):
         self.store = JsonStore()
@@ -66,7 +67,7 @@ class Master(object):
         self.workers = []
         for i in xrange(constants.NUM_WORKERS):
             w = Worker(self.invoker_factory, self.batch_queue,
-                self.insert_into_db_queue, self.update_db_queue, self.store_queue)
+                self.insert_into_db_queue, self.update_db_queue, self.store_queue, self.result_queue)
 
             w.daemon = True
             self.workers.append(w)
@@ -113,7 +114,7 @@ class Master(object):
             target=run_forever(self.insert_into_store, interval=2),
             args=(ctx, ),
         )
-        
+
         # batcher thread
         ctx = Context()
         self.batcher_thread = Thread(
@@ -121,6 +122,11 @@ class Master(object):
             args=(ctx, ),
         )
 
+        ctx = Context()
+        self.process_results_thread = Thread(
+            target=run_forever(self.process_results, interval=2),
+            args=(ctx, ),
+        )
 
         threads = [
             self.crawl_queue_inserter_thread,
@@ -129,6 +135,7 @@ class Master(object):
             self.db_stats_thread,
             self.store_thread,
             self.batcher_thread,
+            self.process_results_thread,
         ]
 
         for t in threads:
@@ -230,6 +237,24 @@ class Master(object):
 
             self.batch_queue.put(batch)
 
+    def process_results(self, ctx):
+        while True:
+            results = self.result_queue.get()
+            for result in results:
+                url = result['url']
+                if not result['success']:
+                    self.update_db_queue.put((url, Status.FAILED))
+                    logger.error("Failed to handle url %s" , url)
+                    logger.error(result["error"])
+                    continue
+
+                self.update_db_queue.put((url, Status.COMPLETED))
+                data, links = result['data'], result['links']
+                if data:
+                    self.store_queue.put(data)
+
+                for link in links:
+                    self.insert_into_db_queue.put(link)
 
     def insert_into_store(self, ctx):
         while True:

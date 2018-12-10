@@ -2,7 +2,7 @@
   "__inputs": [
     {
       "name": "DS_GRAPHITE",
-      "label": "Graphite",
+      "label": "graphite",
       "description": "",
       "type": "datasource",
       "pluginId": "graphite",
@@ -65,7 +65,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1544395228776,
+  "iteration": 1544420620004,
   "links": [],
   "panels": [
     {
@@ -662,7 +662,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "stats.timers.$prefix.lambdas.invocation.success.count"
+          "target": "stats.timers.$prefix.golang.invoke.handle_multiple_urls.success.count"
         }
       ],
       "thresholds": "",
@@ -820,7 +820,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "stats.timers.$prefix.lambdas.invocation.success.mean"
+          "target": "stats.timers.ariados.golang.invoke.handle_multiple_urls.success.mean"
         }
       ],
       "thresholds": "",
@@ -898,7 +898,8 @@
       "targets": [
         {
           "refId": "A",
-          "target": "stats.timers.$prefix.lambdas.invocation.success.count"
+          "target": "stats.timers.$prefix.golang.invoke.handle_multiple_urls.success.count",
+          "textEditor": false
         }
       ],
       "thresholds": "",
@@ -976,7 +977,8 @@
       "targets": [
         {
           "refId": "A",
-          "target": "stats.timers.$prefix.lambdas.invocation.failure.count"
+          "target": "stats.timers.$prefix.golang.invoke.handle_multiple_urls.failure.count",
+          "textEditor": true
         }
       ],
       "thresholds": "",
@@ -991,6 +993,84 @@
         }
       ],
       "valueName": "total"
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": false,
+      "colorValue": false,
+      "colors": [
+        "#299c46",
+        "rgba(237, 129, 40, 0.89)",
+        "#d44a3a"
+      ],
+      "datasource": "${DS_GRAPHITE}",
+      "format": "none",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": true
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 20,
+        "y": 9
+      },
+      "id": 38,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "refId": "A",
+          "target": "stats.gauges.ariados.lambdas.active"
+        }
+      ],
+      "thresholds": "",
+      "title": "Active Lambdas",
+      "type": "singlestat",
+      "valueFontSize": "80%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        }
+      ],
+      "valueName": "current"
     },
     {
       "aliasColors": {},
@@ -1032,7 +1112,7 @@
         {
           "refCount": 0,
           "refId": "A",
-          "target": "movingAverage(stats.timers.$prefix.lambdas.invocation.success.mean_90, 1)"
+          "target": "movingAverage(stats.timers.$prefix.golang.invoke.handle_multiple_urls.success.mean_90, 1)"
         },
         {
           "refCount": 0,
@@ -1466,5 +1546,5 @@
   "timezone": "",
   "title": "Ariados",
   "uid": "_Ppk5kPmz",
-  "version": 5
+  "version": 6
 }

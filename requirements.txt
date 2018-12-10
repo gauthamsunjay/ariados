@@ -7,3 +7,4 @@ requests==2.20.1
 SQLAlchemy==1.2.14
 lxml==4.2.5
 statsd==3.3.0
+tornado==5.1.1

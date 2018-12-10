@@ -57,6 +57,7 @@ class Master(object):
         self.insert_into_db_queue = Queue(maxsize=constants.INSERT_INTO_DB_QUEUE_MAX_SIZE)
         self.update_db_queue = Queue(maxsize=constants.UPDATE_DB_QUEUE_MAX_SIZE)
         self.store_queue = Queue(maxsize=constants.STORE_QUEUE_MAX_SIZE)
+        self.batch_queue = Queue(maxsize=constants.BATCH_QUEUE_MAX_SIZE)
 
     def init_store(self):
         self.store = JsonStore()
@@ -64,7 +65,7 @@ class Master(object):
     def init_workers(self):
         self.workers = []
         for i in xrange(constants.NUM_WORKERS):
-            w = Worker(self.invoker_factory, self.crawl_queue,
+            w = Worker(self.invoker_factory, self.batch_queue,
                 self.insert_into_db_queue, self.update_db_queue, self.store_queue)
 
             w.daemon = True
@@ -112,6 +113,14 @@ class Master(object):
             target=run_forever(self.insert_into_store, interval=2),
             args=(ctx, ),
         )
+        
+        # batcher thread
+        ctx = Context()
+        self.batcher_thread = Thread(
+            target=run_forever(self.batcher, interval=2),
+            args=(ctx, ),
+        )
+
 
         threads = [
             self.crawl_queue_inserter_thread,
@@ -119,6 +128,7 @@ class Master(object):
             self.db_update_thread,
             self.db_stats_thread,
             self.store_thread,
+            self.batcher_thread,
         ]
 
         for t in threads:
@@ -202,6 +212,24 @@ class Master(object):
             logger.info("updated %d links in db", len(batch))
             delta = datetime.datetime.now() - now
             stats.client.timing("db.update_batch", delta.total_seconds() * 1000)
+
+    def batcher(self, ctx):
+        while True:
+            batch = []
+            try:
+                while True:
+                    url = self.crawl_queue.get(timeout=3)
+                    batch.append(url)
+                    if len(batch) >= constants.WORKER_BATCH_SIZE:
+                        break
+            except Empty:
+                pass
+
+            if len(batch) == 0:
+                continue
+
+            self.batch_queue.put(batch)
+
 
     def insert_into_store(self, ctx):
         while True:

@@ -45,19 +45,8 @@ class Worker(Thread):
 
     def run_multiple(self):
         while True:
-            batch = []
-            try:
-                while True:
-                    url = self.worker_queue.get(timeout=3)
-                    stats.client.incr("crawlq.get")
-                    batch.append(url)
-                    if len(batch) >= constants.WORKER_BATCH_SIZE:
-                        break
-            except Empty:
-                pass
-
-            if len(batch) == 0:
-                continue
+            batch = self.worker_queue.get()
+            # stats.client.incr("crawlq.get", len(batch))
 
             try:
                 results = self.invoker.handle_multiple_urls(batch)

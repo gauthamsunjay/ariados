@@ -3,6 +3,7 @@ package main
 import (
     "bytes"
     "fmt"
+    "time"
     "net/http"
     "io/ioutil"
 
@@ -12,10 +13,26 @@ import (
     "github.com/aws/aws-sdk-go/service/lambda"
 )
 
+
+func init() {
+    /*
+    Safety net for 'too many open files' issue on legacy code.
+    Set a sane timeout duration for the http.DefaultClient, to ensure idle connections are terminated.
+    Reference: https://stackoverflow.com/questions/37454236/net-http-server-too-many-open-files-error
+    */
+    http.DefaultClient.Timeout = time.Minute * 2
+}
+
 type Server struct {
     stats *statsd.Client
     invoker *lambda.Lambda
     callbackAddr string
+
+    client *http.Client
+}
+
+func (s *Server) initServer() {
+    s.client = &http.Client{ Timeout: time.Second * 5 }
 }
 
 func (s *Server) invoke(payload []byte, fn string) {
@@ -61,7 +78,8 @@ func (s *Server) invoke(payload []byte, fn string) {
         return
     }
 
-    resp, err := http.Post(url, "application/json", buf)
+    resp, err := s.client.Post(url, "application/json", buf)
+    defer resp.Body.Close()
     if err != nil {
         log.Error("failed to send response to callback", "error", err)
     }

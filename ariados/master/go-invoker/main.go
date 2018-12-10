@@ -57,6 +57,8 @@ func main() {
         callbackAddr: args.CallbackAddr,
     }
 
+    server.initServer()
+
     http.HandleFunc("/single", server.handleSingleURL)
     http.HandleFunc("/multiple", server.handleMultipleURLs)
     if err := http.ListenAndServe(fmt.Sprintf(":%d", args.Port), nil); err != nil {

@@ -4,9 +4,13 @@ import logging
 import os
 import time
 
+from threading import Condition
+
+import requests
 from botocore.exceptions import ReadTimeoutError
 
 from ariados.common import stats
+from ariados.common import constants
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +23,37 @@ class Invoker(object):
 
     def handle_multiple_urls(self, urls):
         raise NotImplementedError
+
+class AWSAsyncLambdaInvoker(Invoker):
+    def __init__(self, async_server_addr):
+        self.async_server_addr = async_server_addr
+        self.lambda_free_cond = Condition()
+        self.num_active_lambdas = 0
+        self.url = "http://%s/multiple" % async_server_addr
+
+    def handle_single_url(self, url):
+        raise NotImplementedError
+
+    def handle_multiple_urls(self, urls):
+        stats.client.incr("lambads.urls.processing", len(urls))
+        self.lambda_free_cond.acquire()
+        while self.num_active_lambdas >= constants.MAX_ACTIVE_LAMBDAS:
+            self.lambda_free_cond.wait()
+
+        self.num_active_lambdas += 1
+        stats.client.gauge("lambdas.active", self.num_active_lambdas)
+        self.lambda_free_cond.release()
+
+        payload = {"urls":urls}
+        resp = requests.post(self.url, data=json.dumps(payload))
+        assert resp.status_code == 202, "expected status code 202 but found %r" % resp
+
+    def got_response(self):
+        self.lambda_free_cond.acquire()
+        self.num_active_lambdas -= 1
+        stats.client.gauge("lambdas.active", self.num_active_lambdas)
+        self.lambda_free_cond.notify()
+        self.lambda_free_cond.release()
 
 class AWSLambdaInvoker(Invoker):
     def __init__(self):

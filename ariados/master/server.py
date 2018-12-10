@@ -1,8 +1,11 @@
+import logging
 import traceback
 
 import flask
 
 from .master import Master
+
+logger = logging.getLogger(__name__)
 
 def run_server(host, port, master):
     assert isinstance(master, Master), "expected Master found %r" % type(master)
@@ -34,6 +37,7 @@ def run_server(host, port, master):
             response = fn(**data)
             return flask.jsonify({'status': 0, 'result': response})
         except Exception as e:
+            logger.error("Got error for function", exc_info=True)
             return flask.jsonify({'status': -1, 'msg': repr(e), 'traceback': traceback.format_exc()})
 
     app.run(host=host, port=port)

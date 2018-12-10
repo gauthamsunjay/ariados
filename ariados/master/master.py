@@ -13,7 +13,7 @@ from ariados.utils import run_forever
 from .store import JsonStore
 from .cockroach import Cockroach
 from .worker import Worker
-from .invokers import AWSLambdaInvoker
+from .invokers import AWSAsyncLambdaInvoker
 from .pgdb import Status, PostgresDB
 
 logger = logging.getLogger(__name__)
@@ -24,9 +24,9 @@ class Context(object):
             setattr(self, k, v)
 
 class Master(object):
-    def __init__(self):
+    def __init__(self, async_server_addr):
         self.threads = []
-        self.invoker_factory = AWSLambdaInvoker
+        self.async_invoker = AWSAsyncLambdaInvoker(async_server_addr)
         self.hm = HandlerManager()
 
         self.init_queues()
@@ -64,15 +64,11 @@ class Master(object):
         self.store = JsonStore()
 
     def init_workers(self):
-        self.workers = []
-        for i in xrange(constants.NUM_WORKERS):
-            w = Worker(self.invoker_factory, self.batch_queue,
-                self.insert_into_db_queue, self.update_db_queue, self.store_queue, self.result_queue)
+        self.worker_thread = Worker(self.async_invoker, self.batch_queue, self.update_db_queue)
 
-            w.daemon = True
-            self.workers.append(w)
-            self.threads.append(w)
-            w.start()
+        self.worker_thread.daemon = True
+        self.worker_thread.start()
+        self.threads.append(self.worker_thread)
 
     def init_service_threads(self):
         last_run = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -275,12 +271,34 @@ class Master(object):
 
         return "enqueued %d startup urls" % len(urls)
 
+    def on_async_invoker_response(self, result, payload):
+        self.async_invoker.got_response()
+
+        success = result.get("success", None)
+        if success in (None, False):
+            logger.error("Got bad lambda response %r" % result)
+            for url in payload["urls"]:
+                self.update_db_queue.put((url, Status.FAILED))
+
+            return
+
+        self.result_queue.put(result['result'])
+
+    def on_async_invoker_error(self, urls):
+        self.async_invoker.got_response()
+
+        for url in urls:
+            self.update_db_queue.put((url, Status.FAILED))
+
+
     def get_http_endpoints(self):
         """
         returns a map of path to function
         """
         endpoints = {
             'start_source': self.start_source,
+            'cb/handle_multiple_urls': self.on_async_invoker_response,
+            'cb/handle_multiple_urls/error': self.on_async_invoker_response,
         }
 
         return endpoints

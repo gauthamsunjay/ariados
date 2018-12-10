@@ -16,6 +16,7 @@ def get_args():
     parser.add_argument("--port", default=8888, type=int)
     parser.add_argument("--stats-prefix", default="ariados")
     parser.add_argument("--log-level", default="info")
+    parser.add_argument("--async-server-addr", default="localhost:13001")
     # TODO add args for influxdb, store, other stuff
     # TODO add log level
     return parser.parse_args()
@@ -26,7 +27,7 @@ def main(args):
     logging.basicConfig(format=format, level=level)
     assert isinstance(args.stats_prefix, basestring)
     stats.set_default_client(StatsClient(host="localhost", port=8125, prefix=args.stats_prefix))
-    run_server(args.host, args.port, Master())
+    run_server(args.host, args.port, Master(args.async_server_addr))
 
 if __name__ == '__main__':
     args = get_args()

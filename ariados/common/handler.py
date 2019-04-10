@@ -6,13 +6,22 @@ class Handler(object):
         # If any of these patterns match, it calls the handler.
         self.patterns = []
 
-    def match(self, s):
+    def match(self, s, qparams=None):
         # TODO flags
-        for p in self.patterns:
+        for p, q in self.patterns:
             match = p.match(s)
-            if match is not None:
+            if match is None:
+                continue
+
+            if q is None:
                 return (self, match)
 
+            if qparams is not None:
+                defined_qparams = set(q)
+                given_qparams = set([i[0] for i in qparams])
+                if defined_qparams == given_qparams:
+                    return (self, match)
+            
         return None
 
     def validate(self):

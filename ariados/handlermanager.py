@@ -98,6 +98,7 @@ class HandlerManager(object):
     # TODO too many urlparse operations. Maybe do that once?
     def get_handler_for_url(self, url):
         parsed_url = urlparse.urlparse(url)
+        qparams = urlparse.parse_qsl(parsed_url.query)
         # TODO allowed scheme?
         domain = parsed_url.netloc
 
@@ -106,7 +107,7 @@ class HandlerManager(object):
             return None
 
         # TODO allow query string matches in the future
-        matches = filter(None, map(lambda h: h.match(parsed_url.path), handlers_for_domain))
+        matches = filter(None, map(lambda h: h.match(parsed_url.path, qparams), handlers_for_domain))
 
         if len(matches) == 0:
             return None
